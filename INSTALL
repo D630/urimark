@@ -1,0 +1,1 @@
+Make file "um" executable and cp it to /usr/local/bin or "${HOME}/bin".

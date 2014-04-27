@@ -1,0 +1,1284 @@
+#!/usr/bin/env bash
+#printf '%s (%s)\n' "$BASH_VERSION" "${BASH_VERSINFO[5]}" && exit 0
+#set -x
+
+# Copyright 2014 D630
+# https://github.com/D630/urimark
+
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+# for more details.
+
+# You should have received a copy of the GNU General
+# Public License along with this program. If not, see
+# <http://www.gnu.org/licenses/gpl-3.0.html>.
+
+# --- Functions.
+
+_version() { echo "0.1.0.1" ; }
+
+_usage()
+{
+    printf 'um (-h|-v| )
+    (-a|-c|-d|-D|-e|-l|-m|-r|-s|-t|-i)
+    [-A|-n|-u|-T|-f|-p]'
+}
+
+_help()
+{
+    printf "USAGE
+-----
+$(_usage)
+
+OPTIONS
+-------
+    -h,  -help
+    -v,  -version
+
+SUBCOMMANDS
+-----------
+    ACTION                  OPTION          ARG
+    ------                  ------          --------
+    -a, -add                                [ <AFIELD> ... ]
+    -c, -cloud                              <CFIELD>
+    -d, -delete             -n              [ <EXP> ... ]
+    -D, -dep                -u, -T , -f     <DFIELD>
+    -e, -edit                               <EEXP> ...
+    -l, -list               -u              [ <EXP> ... ]
+    -m, -modify             -n              [ <EXP> ... ] 'MOD' <MEXP> ...
+    -r, -rebuild                            [ <EXP> ... ]
+    -s, -search             -A              [ <EXP> ... ]
+    -t, -tags               -p              [ <EXP> ... ]
+    -i, -info
+
+    OPTION                  ARG
+    ------                  ---
+    -A, -absolute-path
+    -n, -non-interactive
+    -u, -print-uri
+    -T, -specific-tree
+    -f, -follow-note
+    -p, -print-tags
+
+ARGUMENTS
+---------
+    <AFIELD>    'uri:string', 'name:string', 'description:string',
+                'hierarchy:/foo/foo', 'tag:\"foo;foo;foo\"' or
+                'reference:int,int,int'.
+    <CFIELD>    'scheme', 'authority', 'part', 'hierarchy', 'tag' or
+                'reference'.
+    <DFIELD>*   ID or Reference number specified by an integer.
+    <EXP>
+                <UUID>*     'uuid:uuid'
+                <ID>*       'id:int', 'id:int,int', 'id:int-int' (or
+                            combination).
+                <URI>       'uri:string'
+                <AUTH>*     'authority:string'
+                <SCHEME>*   'scheme:string'
+                <PART>*     'part:string'
+                <MD>*       'md:date' or 'md:date,date'.
+                <BD>*       'bd:date' or 'md:date,date'
+                <NAME>*     'name:string'
+                <DESC>*     'description:string'
+                <HIER>*     'hierarchy:/foo/foo'
+                <TAG>*      'tag:\"foo;foo;foo\"'
+                <REF>*      'reference:int' or 'reference:int,int'.
+                <AND>       and
+                <OR>        or
+                <NOT>       not
+    <EEXP>*     <UUID> or <ID>.
+    <MEXP>      'authority:string', 'scheme:string', 'part:string',
+                'name:string', 'description:string',
+                'hierarchy:/foo/foo', 'tag:string', 'tag-:string',
+                'tag+:string', 'reference:reference',
+                'reference-:reference' or 'reference+:reference'
+
+    *regextype: posix-egrep
+"
+}
+
+_search()
+{
+    declare -g -A search operators
+    declare operator= file= f=
+
+    if (( $# == 0 ))
+    then
+        operator=or
+        operators[$operator]=1
+        while IFS= read -d '' -r file
+        do
+            f=${file%/*}
+            search["${operator} ${f##*/} ${file##*/}"]=1
+        done < <(find "${datadir}" -mindepth 2 -type f ! -name _index -print0)
+    else
+        declare i= j= var= val= pattern= pattern1= pattern2= uuid= id= search_uri_schemes= search_uri_authority= search_uri_schemes_specific_parts=
+        declare -a utc ids=()
+
+        for i
+        do
+            read -r var val <<< "${i/:/ }"
+            [[ $var =~ ^(and|not|or)$ ]] && operator=$var && continue
+            operator=${operator:-or}
+            operators[$operator]=1
+
+            case $var in
+                uuid)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS= read -d '' -r file
+                        do
+                            f=${file%/*}
+                            search["${operator} ${f##*/} ${file##*/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f ! -name _index -regextype posix-egrep -regex "^${datadir}/${pattern}/.*$" -print0)
+                        ;;
+                authority)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$")
+                        ;;
+                md)
+                        for j in ${val//,/ }
+                        do
+                            { [[ $j =~ ^[[:digit:]]*$ ]] && utc+=( $j ) ; } || utc+=( $(date --utc --date "$j" +%s) )
+                        done
+
+                        if (( ${#utc[@]} == 1 ))
+                        then
+                            while IFS='|' read -r uuid id _
+                            do
+                                search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                            done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$")
+                        elif (( ${#utc[@]} == 2 )) # ü
+                        then
+                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                            pattern1=$(_search_binary ${utc[0]} 1 4)
+                            pattern2=$(_search_binary ${utc[1]} 2 4)
+
+                            while IFS='|' read -r uuid id _
+                            do
+                                search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                            done < <(find "${datadir}" -type f -name _index -print0 | xargs -r --null cut -d '|' -f1,2,4 | sort -n | sed -n -e "/|\"${pattern1}\"$/,/|\"${pattern2}\"$/ p" -e "/|\"${pattern2}\"$/ p")
+                        fi
+
+                        unset -v utc
+                        ;;
+                bd)
+                        for j in ${val//,/ }
+                        do
+                            { [[ $j =~ ^[[:digit:]]*$ ]] && utc+=( $j ) ; } || utc+=( $(date --utc --date "$j" +%s) )
+                        done
+
+                        if (( ${#utc[@]} == 1 ))
+                        then
+                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                            while IFS='|' read -r uuid id _
+                            do
+                                search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                            done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$")
+                        elif (( ${#utc[@]} == 2 )) #ü
+                        then
+                            pattern1=$(_search_binary ${utc[0]} 1 3)
+                            pattern2=$(_search_binary ${utc[1]} 2 3)
+
+                            while IFS='|' read -r uuid id _
+                            do
+                                search["${operator} ${uuid} ${id}"]=1
+                            done < <(find "${datadir}" -type f -name _index -print0 | xargs --null cut -d '|' -f1,2,3 | sort -n | sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" -e "/|${pattern2}$/ p")
+                        fi
+
+                        unset -v utc
+                        ;;
+                scheme)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$")
+                        ;;
+                part)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$")
+                        ;;
+                description)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$")
+                        ;;
+                name)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$")
+                        ;;
+                hierarchy)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$")
+                        ;;
+                tag)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$")
+                        ;;
+                reference)
+                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$")
+                        ;;
+                id)
+                        if [[ $val =~ - ]]
+                        then
+                            for id in ${val//-/ }
+                            do
+                                { [[ $id =~ ^\^ ]] && id=${id#^} ; } || id=${id/#/.\*}
+                                { [[ $id =~ \$$ ]] && id=${id/%$/} ; } || id=${id/%/.\*}
+                                ids+=( $id )
+                            done
+
+                            while :
+                            do
+                                if ( _search id:^${ids[0]}$ 2>/dev/null )
+                                then
+                                    break
+                                else
+                                    ids[0]=$(( ${ids[0]}+1 ))
+                                fi
+                            done
+
+                            while :
+                            do
+                                if ( _search id:^${ids[1]}$ 2>/dev/null )
+                                then
+                                    break
+                                else
+                                    ids[1]=$(( ${ids[1]}-1 ))
+                                fi
+                            done
+
+                            while IFS='|' read -r uuid id
+                            do
+                                search["${operator} $uuid $id"]=1
+                            done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d '|' -f1,2 | tr -d '"' | sort -t '|' -k2 -n | sed -n -e "/^.*|${ids[0]}$/,/^.*|${ids[1]}$/ p")
+                        elif [[ $val =~ , ]]
+                        then
+                            for id in ${val//,/ }
+                            do
+                                { [[ $id =~ ^\^ ]] && id=${id#^} ; } || id=${id/#/.\*}
+                                { [[ $id =~ \$$ ]] && id=${id/%$/} ; } || id=${id/%/.\*}
+                                ids+=( $id )
+                            done
+                            printf -v pattern '%s|' ${ids[*]}
+                            pattern=${pattern%|}
+
+                            while IFS= read -d '' -r file
+                            do
+                                f=${file%/*}
+                                search["${operator} ${f##*/} ${file##*/}"]=1
+                            done < <(find "${datadir}" -mindepth 2 -type f ! -name _index -regextype posix-egrep -regex "^${datadir}/.*/(${pattern})" -print0)
+                        else
+                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+                            while IFS= read -d '' -r file
+                            do
+                                f=${file%/*}
+                                search["${operator} ${f##*/} ${file##*/}"]=1
+                            done < <(find "${datadir}" -mindepth 2 -type f ! -name _index -regextype posix-egrep -regex "^${datadir}/.*/${pattern}" -print0)
+                        fi
+
+                        unset -v ids
+                        ;;
+                uri)
+                        search_uri_schemes=${val%%:*}
+                        IFS='/' read -r search_uri_authority search_uri_schemes_specific_parts <<< "${val##*://}"
+                        search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
+
+                        while IFS='|' read -r uuid id _
+                        do
+                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
+                        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$")
+                        ;;
+            esac
+        done
+    fi
+
+    (( ${#search[@]} > 0 )) || { echo "No matching." >&2  ; return 1 ; }
+}
+
+_search_binary()
+{
+    declare b= e= begin= middle= end= pattern=
+    declare -a array=()
+
+    pattern=$1
+    if (( $2 == 1 ))
+    then
+        b=1
+    else
+        e=1
+    fi
+    array=( $(find "${datadir}" -type f -name _index -print0 | xargs --null cut -d '|' -f"${3}" | tr -d '"' | sort -n) )
+    begin=0
+    end=$(( ${#array[@]}-1 ))
+
+    while (( begin <= end ))
+    do
+        middle=$(( begin+(end-begin)/2 ))
+        if (( ${array[middle]} >= pattern ))
+        then
+            if (( e && ${array[middle+1]:-${array[middle]}} <= pattern ))
+            then
+                break
+            else
+                end=$(( middle-1 ))
+            fi
+        elif (( ${array[middle]} <= pattern ))
+        then
+            if (( b && ${array[middle+1]:-${array[middle]}} >= pattern ))
+            then
+                break
+            else
+                begin=$(( middle+1 ))
+            fi
+        fi
+    done
+
+    printf '%s\n' "${array[middle]}"
+}
+
+_search_post()
+{
+    declare key=
+
+    if [[ ( ${operators[or]} && ${operators[not]} ) || ${operators[or]} ]]
+    then
+        for key in "${!search[@]}"
+        do
+            [[ $key =~ (^not*|^and*) ]] && continue
+            [[ ${search[$key]} = ${search[${key/or/not}]} ]] &&
+            {
+                unset -v "search[$key]"
+                unset -v "search[${key/or/not}]"
+            }
+        done
+
+        [[ ${operators[and]} ]] &&
+        {
+            for key in "${!search[@]}"
+            do
+                [[ $key =~ ^and* ]] && continue
+                [[ ${search[$key]} == ${search[${key/or/and}]} ]] && unset -v "search[${key/or/and}]" || unset -v "search[$key]"
+            done
+        }
+
+        for key in "${!search[@]}"
+        do
+            [[ ! $key =~ ^and* ]] && search[${key/or /}]=1
+            unset -v "search[$key]"
+        done
+    elif [[ ${operators[not]} ]]
+    then
+        for key in "${!search[@]}"
+        do
+            [[ $key =~ ^not* ]] &&
+            {
+                keyy=${key/not /}
+                search[${keyy% *}]=1
+            }
+            unset -v "search[$key]"
+        done
+
+        _search_negativ
+
+        for key in "${!search[@]}"
+        do
+            [[ $key =~ [[:blank:]] ]] || unset -v "search[$key]"
+        done
+    fi
+
+    if [[ $path_absolute ]]
+    then
+        for key in "${!search[@]}"
+        do
+            printf "${datadir}/%s\n" "${key% *}/${key#* }"
+        done
+    else
+        for key in "${!search[@]}"
+        do
+            printf '%s\n' "$key"
+        done
+    fi
+}
+
+_search_negativ()
+{
+    declare pattern= file= f=
+
+    pattern=${!search[*]}
+    pattern=${pattern// / ! -name }
+
+    while IFS= read -d '' -r file
+    do
+        f=${file%/*}
+        search["${f##*/} ${file##*/}"]=1
+    done < <(find "${datadir}" -mindepth 2 -type f ! -name ${pattern} -print0)
+}
+
+_edit()
+{
+    if (( $# == 0 ))
+    then
+        { echo "No Arguments" >&2 ; return 1 ; }
+    else
+        declare i=
+        declare -g -a dir_stack=()
+
+        for i
+        do
+            if [[ ${i%:*} =~ (id|uri) ]]
+            then
+                declare j= k= euuid= eid= file_tmp= date= md5_pre= md5_post= date_modification= uuid= date_build= uri_authority= uri_scheme= uri_scheme_specific_part= uri_scheme_specific_part_description= uri_scheme_specific_part_hierarchy= uri_scheme_specific_part_name= uri_scheme_specific_part_id=
+                declare -a uri_scheme_specific_part_reference=() uri_scheme_specific_part_tag=()
+
+                read -r euuid eid < <(_main search "$i")
+                if (( euuid && eid ))
+                then
+                    {
+                        file_tmp=$(mktemp ${TMPDIR:-/tmp}/urimark.XXXXXX) && cp -- "${datadir}/${euuid}/${eid}" "$file_tmp" &&
+                        {
+                            pushd "$euuid" >/dev/null
+                            md5_pre=$(md5sum "$file_tmp")
+                            ${editor} "${file_tmp}"
+                            date=$(date --utc --date now +%s)
+                            md5_post=$(md5sum "$file_tmp")
+                            if [[ $md5_pre != $md5_post ]]
+                            then
+                                source "$file_tmp"
+                                date_modification=$date
+                                {
+                                    printf '%s\n' "uuid=$uuid
+date_build=$date_build
+date_modification=$date_modification
+uri_authority=\"${uri_authority}\"
+uri_scheme=\"${uri_scheme}\"
+uri_scheme_specific_part=\"${uri_scheme_specific_part}\"
+uri_scheme_specific_part_description=\"${uri_scheme_specific_part_description}\"
+uri_scheme_specific_part_hierarchy=\"${uri_scheme_specific_part_hierarchy}\"
+uri_scheme_specific_part_name=\"${uri_scheme_specific_part_name}\"
+uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
+                                    for j in "${!uri_scheme_specific_part_reference[@]}"
+                                    do
+                                        printf '%s\n' "uri_scheme_specific_part_reference[$j]=${uri_scheme_specific_part_reference[$j]}"
+                                    done
+                                    for k in "${!uri_scheme_specific_part_tag[@]}"
+                                    do
+                                        printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
+                                    done
+                                } > "${datadir}/${euuid}/${eid}" && { echo "Data set has been modified." >&2 ; dir_stack+=( $(dirs -l -p) ) ; echo "Index is being rebuild..." >&2 ; rm -- "$file_tmp" ; return 0 ; }
+                                #rm -- "$file_tmp"
+                            else
+                                rm -- "$file_tmp"
+                                { echo "Data set has not been modified." >&2 ; return 1 ; }
+                            fi
+                        }
+                    } || { echo "Tmp File has not been created." >&2 ; return 1 ; }
+                else
+                    { echo "No matching." >&2 ; return 1 ; }
+                fi
+            else
+                { echo "Search pattern '$i' is not allowed." >&2 ; return 1 ; }
+            fi
+        done
+    fi
+}
+
+_add()
+{
+    declare i= uri= name= description= hierarchy= scheme= authority= part= succeeded= date= bd= md= id= auuid= aid= uuid=
+    declare -a references tags=()
+    declare -g -a dir_stack=()
+
+    if (( $# == 0 ))
+    then
+        read -re -p "URI: " uri
+        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
+        then
+            { echo "Wrong scheme." >&2 ; return 1 ; }
+        elif ( _search "uri:${uri}" 2> /dev/null )
+        then
+            { echo "URI '$uri' has already been recorded." >&2 ; return 1 ; }
+        fi
+
+        read -re -p "Name: " name
+        read -re -p "Description: " description
+        IFS=';' read -re -p "Tags: " -a tags
+        read -re -p "Hierarchy: " hierarchy
+        IFS=',' read -re -p "References: " -a references
+    else
+        for i
+        do
+            case $i in
+                uri:*)
+                        uri=${i#*:}
+                        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
+                        then
+                            { echo "Wrong scheme." >&2 ; return 1 ; }
+                        elif ( _search uri:${uri} 2> /dev/null )
+                        then
+                            { echo "URI '$uri' has already been recorded." >&2 ; return 1 ; }
+                        fi
+                        ;;
+                name:*)
+                        name=${i#*:}
+                        ;;
+                description:*)
+                        description=${i#*:}
+                        ;;
+                hierarchy:*)
+                        hierarchy=${i#*:}
+                        ;;
+                tag:*)
+                        IFS=';' read -r -a tags <<< "${i#*:}"
+                        ;;
+                reference:*)
+                        IFS=',' read -r -a references <<< "${i#*:}"
+                        ;;
+            esac
+        done
+        [[ ! $uri ]] && { echo "We need an URI to record." >&2 ; return 1 ; }
+    fi
+
+    date=$(date --utc --date now +%s)
+
+    (( ${#tags[@]} == 0 )) && tags[0]=null
+    (( ${#references[@]} == 0 )) && references[0]=null
+
+    bd=$date
+    md=$date
+    id=$(_calculating_id)
+    id=${id:-1}
+
+    scheme=${uri%%:*}
+    IFS='/' read -r authority part <<< "${uri##*://}"
+    part=/${part%%/}
+    read -r auuid aid _ < <(_main search "authority:^${authority}$")
+
+    if (( auuid && aid ))
+    then
+        uuid=$auuid
+        pushd "$uuid" >/dev/null
+        printf '%s\n' "Authority is already recorded at file://${datadir}/${auuid} ." >&2
+        _add_print && succeeded=succeeded
+    else
+        uuid=$(_random 16)
+        mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." >&2
+        pushd "$uuid" >/dev/null
+        _add_print && succeeded=succeeded
+    fi
+
+    if [[ $succeeded ]]
+    then
+        printf '%s\n' "New URI with id ${id} has been recorded." >&2
+        dir_stack+=( $(dirs -l -p) )
+        echo "Index is being rebuild..." >&2
+    else
+         { printf '%s\n' "URI has not been recorded." >&2 ; return 1 ; }
+    fi
+}
+
+_add_print()
+{
+    declare j= k=
+
+    exec 3>"${datadir}/${uuid}/${id}"
+
+    printf '%s\n' "uuid=$uuid
+date_build=$bd
+date_modification=$md
+uri_authority=\"${authority}\"
+uri_scheme=\"${scheme}\"
+uri_scheme_specific_part=\"${part}\"
+uri_scheme_specific_part_description=\"${description:-null}\"
+uri_scheme_specific_part_hierarchy=\"${hierarchy:-null}\"
+uri_scheme_specific_part_name=\"${name:-null}\"
+uri_scheme_specific_part_id=$id" >&3
+
+    for j in "${!references[@]}"
+    do
+        printf '%s\n' "uri_scheme_specific_part_reference[$j]=${references[$j]}"
+    done >&3
+
+    for k in "${!tags[@]}"
+    do
+        printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${tags[$k]}\""
+    done >&3
+
+    exec 3<&-
+}
+
+_delete()
+{
+    if (( $# == 0 ))
+    then
+        { printf '%s\n' "We need an argument." >&2 ; return 1 ; }
+    else
+        declare delete_all= response= d=
+        declare -a deletion=()
+        declare -g -a dir_stack=()
+
+        while read -r
+        do
+            if [[ $delete_all || $non_interactive ]]
+            then
+                deletion+=( "$REPLY" )
+            else
+                printf 'UUID: %s\nID:   %s\n' $REPLY
+                read -u 3 -p "Do you really wanne delete this record? (y/n/all/quit) " response
+
+                case $response in
+                    all)
+                            delete_all=delete_all
+                            ;&
+                    y|yes)
+                            deletion+=( "$REPLY" )
+                            ;;
+                    n|no)
+                            continue
+                            ;;
+                    quit)
+                            { unset -v deletion ; break ; }
+                            ;;
+                    *)
+                            continue
+                            ;;
+                esac
+            fi
+        done 3<&0 < <(_main search "$@")
+
+        if (( ${#deletion[@]} != 0 ))
+        then
+            for d in "${deletion[@]}"
+            do
+                pushd "${d% *}" >/dev/null
+                rm -- "${datadir}/${d% *}/${d#* }"
+            done
+            dir_stack+=( $(dirs -l -p) )
+            rm -- "${datadir}/${d% *}/_index" 2>/dev/null
+            echo "Records has been deleted." >&2
+            echo "Index is being rebuild..." >&2
+        else
+            { echo "No Records has been deleted." >&2 ; return 1 ; }
+        fi
+    fi
+}
+
+_modify()
+{
+    declare i= j= k= tag= ref= record= modify_all= date= response=
+    declare -a tags references=() modification=()
+    declare -g -a dir_stack=()
+
+    if (( ${#mods[@]} == 0 ))
+    then
+         { printf '%s\n' "We need to specify a modification." >&2 ; return 1 ; }
+    else
+        for i in "${!mods[@]}"
+        do
+            case ${mods[i]} in
+                authority*)
+                        mods[i]="-e s|^uri_authority=.*$|uri_authority=\"${mods[i]#*:}\"|"
+                        ;;
+                scheme*)
+                        mods[i]="-e s|^uri_scheme=.*$|uri_scheme=\"${mods[i]#*:}\"|"
+                        ;;
+                part*)
+                        mods[i]="-e s|^uri_scheme_specific_part=.*$|uri_scheme_specific_part=\"${mods[i]#*:}\"|"
+                        ;;
+                name*)
+                        mods[i]="-e s|^uri_scheme_specific_part_name=.*$|uri_scheme_specific_part_name=\"${mods[i]#*:}\"|"
+                        ;;
+                description*)
+                        mods[i]="-e s|^uri_scheme_specific_part_description=.*$|uri_scheme_specific_part_description=\"${mods[i]#*:}\"|"
+                        ;;
+                hierarchy*)
+                        mods[i]="-e s|^uri_scheme_specific_part_hierarchy=.*$|uri_scheme_specific_part_hierarchy=\"${mods[i]#*:}\"|"
+                        ;;
+                tag:*)
+                        for j in "${patterns[@]}"
+                        do
+                            [[ $j == tag:* ]] && tags+=( "${j#*:}" )
+                        done
+                        printf -v tag '%s|' "${tags[@]//^/}"
+                        tag=${tag//$/}
+                        tag=${tag%|*}
+
+                        mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"(${tag})\"$|\1\"${mods[i]#*:}\"|"
+                        ;;
+                tag-*)
+                        mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*:}\"$/d"
+                        ;;
+                tag+*)
+                        index=$(_random 4)
+                        mods[i]="-e $ i uri_scheme_specific_part_tag[${index}]=\"${mods[i]#*:}\""
+                        ;;
+                reference:*)
+                        for k in "${patterns[@]}"
+                        do
+                            [[ $k == reference:* ]] && references+=( "${k#*:}" )
+                        done
+                        printf -v ref '%s|' "${references[@]//^/}"
+                        ref=${ref//$/}
+                        ref=${ref%|*}
+
+                        mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)(${ref})$|\1${mods[i]#*:}|"
+                        ;;
+                reference-*)
+                        mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*:}$/d"
+                        ;;
+                reference+*)
+                        index=$(_random 4)
+                        mods[i]="-e $ i uri_scheme_specific_part_reference[${index}]=${mods[i]#*:}"
+                        ;;
+                *)
+                        unset -v "mods[i]"
+                        ;;
+            esac
+        done
+
+        while read -r record
+        do
+            if [[ $modify_all || $non_interactive ]]
+            then
+                modification+=( "${datadir}/${record% *}/${record#* }" )
+                pushd "${record% *}" >/dev/null
+            else
+                printf 'UUID: %s\nID:   %s\n' $record
+                read -u 3 -p "Do you really wanne modify this record? (y/n/all/quit) " response
+
+                case $response in
+                    all)
+                            modify_all=modify_all
+                            ;&
+                    y|yes)
+                            modification+=( "${datadir}/${record% *}/${record#* }" )
+                            pushd "${record% *}" >/dev/null
+                            ;;
+                    n|no)
+                            continue
+                            ;;
+                    quit)
+                            { unset -v modification ; break ; }
+                            ;;
+                    *)
+                            continue
+                            ;;
+                esac
+            fi
+        done 3<&0 < <(_main search "${patterns[@]}")
+
+        if (( ${#modification[@]} != 0 ))
+        then
+            dir_stack+=( $(dirs -l -p) )
+            date=$(date --utc --date now +%s)
+            printf '%q\n' "${modification[@]}" | xargs -d '\n' sed -i -r -e "/date_modification=.*/ c date_modification=${date}" "${mods[@]}"
+            echo "Records has been modified." >&2
+            echo "Index is being rebuild..." >&2
+        else
+            { echo "No Records has been modified." >&2 ; return 1 ; }
+        fi
+    fi
+}
+
+_list()
+{
+    if (( $# == 0 ))
+    then
+        if [[ $build_uri ]]
+        then
+            find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
+        else
+            find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n 'p'
+        fi
+    else
+        mapfile -t < <(_main search "$@")
+        if [[ $build_uri ]]
+        then
+            find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null fgrep -h -f <(printf '"%s"\n' ${MAPFILE[@]// /\"|\"}) | sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
+        else
+            find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null fgrep -h -f <(printf '"%s"\n' ${MAPFILE[@]// /\"|\"})
+        fi
+    fi
+}
+
+_cloud()
+{
+    declare field=
+
+    case ${1#-} in
+        scheme)
+                field=5
+                ;;
+        authority)
+                field=6
+                ;;
+        part)
+                field=7
+                ;;
+        hierarchy)
+                field=10
+                ;;
+        tag)
+                field=11
+                ;;
+        reference)
+                field=12
+                ;;
+        *)
+                { printf '%s\n' "We need an argument." >&2 ; return 1 ; }
+                ;;
+    esac
+
+    find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d'|' -f"${field}" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
+}
+
+_dependency_search()
+{
+    declare val=$1 pattern= id= ref=
+
+
+    { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+    { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
+    if [[ $search_specific_tree ]]
+    then
+        while IFS='|' read -r _ id _ _ _ _ _ _ _ _ _ ref
+        do
+            id=${id//\"/}
+            ref=${ref//\"/}
+            printf '%s %s\n' "$id" "$ref"
+            dependencies[$id]=$ref
+            [[ $follow_note ]] &&
+            {
+                for i in ${ref//;/ }
+                do
+                    [[ ! ${dependencies[$i]} ]] && _dependency_search "^${i}$" && break
+                done
+            }
+        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$")
+    else
+        while IFS='|' read -r _ id _ _ _ _ _ _ _ _ _ ref
+        do
+            printf '%s %s\n' "${id//\"/}" "${ref//\"/}"
+        done < <(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$")
+    fi
+}
+
+_dependency_do()
+{
+    declare -A deps children
+    declare -a ch=() tsorted=() new_children=()
+    declare parent= child= c= i= j= k= l= skip= m= n= ind= indd=
+
+    while read -r parent child
+    do
+        [[ $child ]] &&
+        {
+            ch=()
+            for c in ${child//;/ }
+            do
+                if [[ ${deps[${c} ${parent}]} ]]
+                then
+                    continue
+                else
+                    deps[${parent} ${c}]=${c}
+                    ch+=( $c )
+                fi
+            done
+            children[$parent]=${ch[@]}
+            parent=
+            child=
+        }
+    done
+
+    [[ ! ${deps[@]} ]] && { echo "No matching." >&2 ; return 1 ; }
+
+    mapfile -t tsorted < <(printf '%s\n' "${!deps[@]}" | tsort 2>/dev/null)
+
+    for (( i=${#tsorted[@]}-1 ; i >= 0 ; --i ))
+    do
+        [[ ${children[${tsorted[$i]}]} ]] &&
+        {
+            new_children=()
+            for j in ${children[${tsorted[$i]}]}
+            do
+                if [[ ${children[$j]} ]]
+                then
+                    new_children+=( ${j}_${children[$j]// /_} )
+                else
+                    new_children+=( ${j} )
+                fi
+            done
+            children[${tsorted[$i]}]=${new_children[@]}
+        }
+    done
+
+    ind=$(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n '$=')
+    ind=${#ind}
+
+    for k in "${tsorted[@]}"
+    do
+        skip=
+        for l in ${children[@]//_/ }
+        do
+            (( $k == $l )) && skip=skip && break
+        done
+        [[ ! $skip ]] &&
+        {
+            if [[ $print_desc ]]
+            then
+                printf '%d %s\n' "$k" "$(_main list -u id:^${k}$ | cut -d '|' -f5)"
+                for m in ${children[$k]}
+                do
+                    indd=$ind
+                    if [[ $m =~ _ ]]
+                    then
+                        for n in ${m//_/ }
+                        do
+                            printf '%*d %s\n' "$((indd+=4))" "$n" "$(_main list -u id:^${n}$ | cut -d '|' -f5)"
+                        done
+                    else
+                        printf '%*d %s\n' "$((indd+4))" "$m" "$(_main list -u id:^${m}$ | cut -d '|' -f5)"
+                    fi
+                done
+            else
+                printf '%d\n' "$k"
+                for m in ${children[$k]}
+                do
+                    indd=$ind
+                    if [[ $m =~ _ ]]
+                    then
+                        for n in ${m//_/ }
+                        do
+                            printf '%*d\n' "$((indd+=4))" "$n"
+                        done
+                    else
+                        printf '%*d\n' "$((indd+4))" "$m"
+                    fi
+                done
+            fi
+        }
+    done
+}
+
+_tags()
+{
+    declare id=
+
+    if [[ $print_tags ]]
+    then
+        while read -r _ id
+        do
+            printf '%s\n    %s\n' "${id} $(_main list -u id:^${id}$ | cut -d '|' -f5)" "$(_main list id:^${id}$ | cut -d '|' -f11 | sed -e 's/"//g;s/;/ /g')"
+        done < <(_main search "$@")
+    else
+        while read -r _ id
+        do
+            printf '%s %s\n' "$id" "$(_main list -u id:^${id}$ | cut -d '|' -f5)"
+        done < <(_main search "$@")
+    fi
+}
+
+_info()
+{
+    printf '%s\n' "Authorities: $(find "${datadir}" -maxdepth 1 -type d ! -name _index ! -name urimark | wc -l)" "URIs: $(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n '$=')"
+}
+
+_rebuild()
+{
+    declare ruuid= succeeded= dir=
+    declare -g -a dir_stack=()
+
+    if (( $# == 0 ))
+    then
+        while IFS= read -d '' -r
+        do
+            succeeded=succeeded && pushd "$REPLY" >/dev/null
+        done < <(find "${datadir}" -maxdepth 1 -type d -print0)
+    else
+        while read -r ruuid _
+        do
+            (( ruuid )) && succeeded=succeeded && pushd "$ruuid" >/dev/null
+            unset -v ruuid
+        done < <(_main search "$@")
+    fi
+
+    if [[ $succeeded ]]
+    then
+        dir_stack+=( $(dirs -l -p) )
+        { echo "Index is being rebuild..." >&2 ; return 0 ; }
+    else
+        { echo "No index has been rebuild." >&2 ; return 1 ; }
+    fi
+}
+
+_rebuild_index()
+{
+    shopt -s extglob
+    declare dir= i=
+
+    while read -r dir
+    do
+        declare -a r_uuid=() r_db=() r_dm=() r_au=() r_id=() r_scheme=() r_part=() r_desc=() r_name=() r_ref=() r_tag=() r_hier=() uri_scheme_specific_part_reference uri_scheme_specific_part_tag
+        declare uuid= date_build= date_modification= uri_authority= uri_scheme_specific_part_id= uri_scheme= uri_scheme_specific_part= uri_scheme_specific_part_description= uri_scheme_specific_part_name= uri_scheme_specific_part_hierarchy=
+
+        rm -- "${dir}/_index" 2>/dev/null
+        cd -- "$dir" 2>/dev/null &&
+        {
+            while read -r
+            do
+                source "$REPLY" 2>/dev/null &&
+                {
+                    r_uuid+=( $uuid )
+                    r_db+=( $date_build )
+                    r_dm+=( $date_modification )
+                    r_au+=( "$uri_authority" )
+                    r_id+=( $uri_scheme_specific_part_id )
+                    r_scheme+=( "$uri_scheme" )
+                    r_part+=( "$uri_scheme_specific_part" )
+                    r_desc+=( "$uri_scheme_specific_part_description" )
+                    r_name+=( "$uri_scheme_specific_part_name" )
+                    r_hier+=( "$uri_scheme_specific_part_hierarchy" )
+                    r_ref+=( "$(printf '%s;' "${uri_scheme_specific_part_reference[@]}")" )
+                    r_tag+=( "$(printf '%s;' "${uri_scheme_specific_part_tag[@]}")" )
+                }
+
+                unset -v uri_scheme_specific_part_reference uri_scheme_specific_part_tag
+            done < <(printf "${dir}/%s\n" !(_index) 2>/dev/null)
+
+            exec 3>"${dir}/_index"
+            for i in "${!r_uuid[@]}"
+            do
+                printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" >&3
+            done
+            exec 3<&-
+        }
+    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${datadir}/.*" | sort | uniq)
+
+    shopt -u extglob
+}
+
+_random()
+{
+    declare random=
+
+    random=$(od -vAn -N"${1}" -tu < /dev/urandom)
+    printf '%s\n' "${random// /}"
+}
+
+_calculating_id() { printf '%s\n' "$(($(find "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs --null cut -d "|" -f2 | tr -d '"' | sort -n | tail -n1)+1))" ; }
+
+_delete_empty_dirs() { find "${datadir}" -maxdepth 1 -type d -empty -delete ; }
+
+_main()
+{
+    declare path_absolute= non_interactive= mod= build_uri= search_specific_tree= print_desc= follow_note= print_tags=
+    declare -g -a mods=() patterns=()
+    declare -g -A dependencies
+
+    case ${1#-} in
+        s|search)
+                if [[ ${2#-} =~ (A|absolute-path) ]]
+                then
+                    path_absolute=path_absolute
+                    shift 2
+                else
+                    shift 1
+                fi
+                _search "$@" && _search_post
+                unset -v search operators path_absolute
+                ;;
+        e|edit)
+                shift 1
+                _edit "$@" && _rebuild_index && echo "Done."
+                unset -v dir_stack
+                ;;
+        a|add)
+                shift 1
+                _add "$@" && _rebuild_index && echo "Done."
+                unset -v dir_stack
+                ;;
+        d|delete)
+                if [[ ${2#-} =~ (n|non-interactive) ]]
+                then
+                    non_interactive=non_interactive
+                    shift 2
+                else
+                    shift 1
+                fi
+                _delete "$@" && { _delete_empty_dirs ; _rebuild_index ; echo "Done." >&2 ; }
+                unset -v dir_stack non_interactive
+                ;;
+        m|modify)
+                shift 1
+                while :
+                do
+                    case ${1#-} in
+                        MOD)
+                                mod=mod
+                                shift 1
+                                continue
+                                ;;
+                        uuid*|authority*|part*|id*|scheme*|hierarchy*|reference:*|reference+:*|reference-:*|uri*|md*|bd*|and|not|or|name*|description*|tag:*|tag+:*|tag-:*)
+                                if [[ $mod ]]
+                                then
+                                    mods+=( "${1#-}" )
+                                else
+                                    patterns+=( "${1#-}" )
+                                fi
+                                shift 1
+                                continue
+                                ;;
+                        n|non-interactive)
+                                non_interactive=non_interactive
+                                shift 1
+                                continue
+                                ;;
+                        *)
+                                break
+                                ;;
+                    esac
+                done
+                _modify && _rebuild_index && echo "Done." >&2
+                unset -v dir_stack non_interactive mod mods patterns
+                ;;
+        l|list)
+                if [[ ${2#-} =~ (u|print-uri) ]]
+                then
+                    build_uri=build_uri
+                    shift 2
+                else
+                    shift 1
+                fi
+                _list "$@"
+                unset -v build_uri
+                ;;
+        c|cloud)
+                shift 1
+                _cloud "$1"
+                ;;
+        t|tags)
+                if [[ ${2#-} =~ (p|print-tags) ]]
+                then
+                    print_tags=print_tags
+                    shift 2
+                else
+                    shift 1
+                fi
+                _tags "$@"
+                unset -v print_tags
+                ;;
+        i|info)
+                shift 1
+                _info
+                ;;
+        D|dep)
+                shift 1
+                while :
+                do
+                    case ${1#-} in
+                        T|specific-tree)
+                                shift 1
+                                search_specific_tree=search_specific_tree
+                                continue
+                                ;;
+                        u|print-uri)
+                                shift 1
+                                print_desc=print_desc
+                                continue
+                                ;;
+                        f|follow-note)
+                                shift 1
+                                follow_note=follow_note
+                                continue
+                                ;;
+                        *)
+                                break
+                                ;;
+                    esac
+                done
+                _dependency_search "$1" | _dependency_do
+                unset -v dependencies search_specific_tree print_desc follow_note
+                ;;
+        r|rebuild)
+                shift 1
+                _rebuild "$@" && _rebuild_index && echo "Done." >&2
+                unset -v dir_stack
+                ;;
+        h|help)
+                shift 1
+                _help
+                ;;
+        v|version)
+                shift 1
+                _version
+                ;;
+        *)
+                { printf 'USAGE: %s\n' "$(_usage)" >&2 ; return 1 ; }
+                ;;
+    esac
+}
+
+# --- Start.
+
+{ [[ ! $BASH_VERSION ]] || (( ${BASH_VERSINFO[0]} < 4)) ; } && { echo "bash >= 4.0 required." >&2 ; exit 1 ; }
+
+declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
+declare -rg datadir=${URIMARK_DATA:-${predir_datadir}/urimark}
+declare -rg editor=${EDITOR:-nano} CDPATH=$datadir
+
+[[ -f $datadir ]] && { echo "Could not create Data Dir." >&2 ; exit 1 ; }
+[[ ! -e $datadir ]] && mkdir -p "$datadir"
+
+_main "$@"
