@@ -1387,7 +1387,8 @@ __um_main()
                 u)  build_uri=build_uri ; print_desc=print_desc       ;;
                 v)  action=version                                    ;;
                 Y)  __um_check_args "authority=$OPTARG"               ;;
-                \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2     ;;
+                \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
+                    exit 1                                            ;;
         esac
     done
 
@@ -1397,7 +1398,7 @@ __um_main()
                 unset -v dir_stack
                 ;;
         cloud)
-                __um_cloud "${patterns[@]}"
+                __um_cloud "${patterns[0]}"
                 ;;
         delete)
                 __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; echo "Done." >&2 ; }
