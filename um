@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.0.1" ; }
+__um_version() { echo "0.1.0.3" ; }
 
 __um_usage()
 {
@@ -117,8 +117,30 @@ ARGUMENTS
 
 __um_search()
 {
-    declare -g -A search operators
-    declare operator= file= f=
+    declare -gA \
+                search \
+                operators
+
+    declare \
+            f= \
+            file= \
+            i= \
+            id= \
+            j= \
+            operator= \
+            pattern= \
+            pattern1= \
+            pattern2= \
+            search_uri_authority= \
+            search_uri_schemes= \
+            search_uri_schemes_specific_parts= \
+            uuid= \
+            val= \
+            var=
+
+    declare -a \
+                ids=() \
+                utc=()
 
     if (( $# == 0 ))
     then
@@ -130,9 +152,6 @@ __um_search()
             search["${operator} ${f##*/} ${file##*/}"]=1
         done < <(find -H "${datadir}" -mindepth 2 -type f ! -name _index -print0)
     else
-        declare i= j= var= val= pattern= pattern1= pattern2= uuid= id= search_uri_schemes= search_uri_authority= search_uri_schemes_specific_parts=
-        declare -a utc ids=()
-
         for i
         do
             read -r var val <<< "${i/:/ }"
@@ -361,7 +380,14 @@ __um_search()
 
 __um_search_binary()
 {
-    declare b= e= begin= middle= end= pattern=
+    declare \
+            b= \
+            begin= \
+            e= \
+            end= \
+            middle= \
+            pattern=
+
     declare -a array=()
 
     pattern=$1
@@ -466,7 +492,10 @@ __um_search_post()
 
 __um_search_negativ()
 {
-    declare pattern= file= f=
+    declare \
+            f= \
+            file= \
+            pattern=
 
     pattern=${!search[*]}
     pattern=${pattern// / ! -name }
@@ -480,20 +509,41 @@ __um_search_negativ()
 
 __um_edit()
 {
+    declare \
+            date= \
+            date_build= \
+            date_modification= \
+            eid= \
+            euuid= \
+            file_tmp= \
+            i= \
+            j= \
+            k= \
+            md5_post= \
+            md5_pre= \
+            uri_authority= \
+            uri_scheme= \
+            uri_scheme_specific_part= \
+            uri_scheme_specific_part_description= \
+            uri_scheme_specific_part_hierarchy= \
+            uri_scheme_specific_part_id= \
+            uri_scheme_specific_part_name= \
+            uuid=
+
+    declare -ga dir_stack=()
+
+    declare -a \
+               uri_scheme_specific_part_reference=() \
+               uri_scheme_specific_part_tag=()
+
     if (( $# == 0 ))
     then
         { echo "No Arguments" >&2 ; return 1 ; }
     else
-        declare i=
-        declare -g -a dir_stack=()
-
         for i
         do
             if [[ ${i%:*} =~ (id|uri) ]]
             then
-                declare j= k= euuid= eid= file_tmp= date= md5_pre= md5_post= date_modification= uuid= date_build= uri_authority= uri_scheme= uri_scheme_specific_part= uri_scheme_specific_part_description= uri_scheme_specific_part_hierarchy= uri_scheme_specific_part_name= uri_scheme_specific_part_id=
-                declare -a uri_scheme_specific_part_reference=() uri_scheme_specific_part_tag=()
-
                 read -r euuid eid < <(__um_main search "$i")
                 if (( euuid && eid ))
                 then
@@ -548,9 +598,29 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
 
 __um_add()
 {
-    declare i= uri= name= description= hierarchy= scheme= authority= part= succeeded= date= bd= md= id= auuid= aid= uuid=
-    declare -a references tags=()
-    declare -g -a dir_stack=()
+    declare \
+            aid= \
+            authority= \
+            auuid= \
+            bd= \
+            date= \
+            description= \
+            hierarchy= \
+            i= \
+            id= \
+            md= \
+            name= \
+            part= \
+            scheme= \
+            succeeded= \
+            uri= \
+            uuid=
+
+    declare -a \
+               references=() \
+               tags=()
+
+    declare -ga dir_stack=()
 
     if (( $# == 0 ))
     then
@@ -642,7 +712,9 @@ __um_add()
 
 __um_add_print()
 {
-    declare j= k=
+    declare \
+            j= \
+            k=
 
     exec 3>"${datadir}/${uuid}/${id}"
 
@@ -672,14 +744,19 @@ uri_scheme_specific_part_id=$id" >&3
 
 __um_delete()
 {
+    declare \
+            d= \
+            delete_all= \
+            response=
+
+    declare -a deletion=()
+
+    declare -ga dir_stack=()
+
     if (( $# == 0 ))
     then
         { printf '%s\n' "We need an argument." >&2 ; return 1 ; }
     else
-        declare delete_all= response= d=
-        declare -a deletion=()
-        declare -g -a dir_stack=()
-
         while read -r
         do
             if [[ $delete_all || $non_interactive ]]
@@ -728,9 +805,23 @@ __um_delete()
 
 __um_modify()
 {
-    declare i= j= k= tag= ref= record= modify_all= date= response=
-    declare -a tags references=() modification=()
-    declare -g -a dir_stack=()
+    declare \
+            date= \
+            i= \
+            j= \
+            k= \
+            modify_all= \
+            record= \
+            ref= \
+            response= \
+            tag=
+
+    declare -a \
+               modification=() \
+               references=() \
+               tags=()
+
+    declare -ga dir_stack=()
 
     if (( ${#mods[@]} == 0 ))
     then
@@ -897,8 +988,11 @@ __um_cloud()
 
 __um_dependency_search()
 {
-    declare val=$1 pattern= id= ref=
-
+    declare \
+            id= \
+            pattern= \
+            ref= \
+            val=$1
 
     { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
     { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
@@ -929,9 +1023,28 @@ __um_dependency_search()
 
 __um_dependency_do()
 {
-    declare -A deps children
-    declare -a ch=() tsorted=() new_children=()
-    declare parent= child= c= i= j= k= l= skip= m= n= ind= indd=
+    declare -A \
+               deps \
+               children
+
+    declare -a \
+               ch=() \
+               new_children=() \
+               tsorted=()
+
+    declare \
+            c= \
+            child= \
+            i= \
+            ind= \
+            indd= \
+            j= \
+            k= \
+            l= \
+            m= \
+            n= \
+            parent= \
+            skip=
 
     while read -r parent child
     do
@@ -1049,8 +1162,12 @@ __um_info()
 
 __um_rebuild()
 {
-    declare ruuid= succeeded= dir=
-    declare -g -a dir_stack=()
+    declare \
+            dir= \
+            ruuid= \
+            succeeded=
+
+    declare -ga dir_stack=()
 
     if (( $# == 0 ))
     then
@@ -1078,7 +1195,10 @@ __um_rebuild()
 __um_rebuild_index()
 {
     shopt -s extglob
-    declare dir= i=
+
+    declare \
+            dir= \
+            i=
 
     while read -r dir
     do
@@ -1135,9 +1255,21 @@ __um_delete_empty_dirs() { find -H "${datadir}" -maxdepth 1 -type d -empty -dele
 
 __um_main()
 {
-    declare path_absolute= non_interactive= mod= build_uri= search_specific_tree= print_desc= follow_note= print_tags=
-    declare -g -a mods=() patterns=()
-    declare -g -A dependencies
+    declare \
+            build_uri= \
+            follow_note= \
+            mod= \
+            non_interactive= \
+            path_absolute= \
+            print_desc= \
+            print_tags= \
+            search_specific_tree=
+
+    declare -ga \
+                mods=() \
+                patterns=()
+
+    declare -gA dependencies
 
     case ${1#-} in
         s|search)
@@ -1286,9 +1418,9 @@ __um_main()
 
 declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
 declare -r datadir=${URIMARK_DATA:-${predir_datadir}/urimark}
-declare -rg \
-            editor=${EDITOR:-nano} \
-            CDPATH=$datadir
+declare -r \
+           CDPATH=$datadir \
+           editor=${EDITOR:-nano}
 
 [[ -f $datadir ]] && { echo "Could not create Data Dir." >&2 ; exit 1 ; }
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
