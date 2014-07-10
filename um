@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.0" ; }
+__um_version() { echo "0.1.1.1" ; }
 
 __um_usage()
 {
@@ -1361,9 +1361,9 @@ __um_main()
                 a)  patterns+=(and)                                   ;;
                 A)  action=add                                        ;;
                 B)  __um_check_args "bd=$OPTARG"                      ;;
-                c)  __um_check_args "cloud=$OPTARG"                   ;;
+                c)  action=cloud ; __um_check_args "$OPTARG"          ;;
                 d)  action=delete                                     ;;
-                D)  __um_check_args "dep=$OPTARG"                     ;;
+                D)  action=dep ; __um_check_args "$OPTARG"            ;;
                 e)  action=edit                                       ;;
                 E)  search_specific_tree=search_specific_tree         ;;
                 f)  follow_note=follow_note                           ;;
@@ -1397,7 +1397,7 @@ __um_main()
                 unset -v dir_stack
                 ;;
         cloud)
-                __um_cloud "${patterns[0]}"
+                __um_cloud "${patterns[@]}"
                 ;;
         delete)
                 __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; echo "Done." >&2 ; }
