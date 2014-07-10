@@ -33,20 +33,20 @@
 
 # -- FUNCTIONS.
 
-_version() { echo "0.1.0.1" ; }
+__um_version() { echo "0.1.0.1" ; }
 
-_usage()
+__um_usage()
 {
     printf 'um (-h|-v| )
     (-a|-c|-d|-D|-e|-l|-m|-r|-s|-t|-i)
     [-A|-n|-u|-T|-f|-p]'
 }
 
-_help()
+__um_help()
 {
     printf "USAGE
 -----
-$(_usage)
+$(__um_usage)
 
 OPTIONS
 -------
@@ -115,7 +115,7 @@ ARGUMENTS
 "
 }
 
-_search()
+__um_search()
 {
     declare -g -A search operators
     declare operator= file= f=
@@ -177,8 +177,8 @@ _search()
                             { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
                             { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
 
-                            pattern1=$(_search_binary ${utc[0]} 1 4)
-                            pattern2=$(_search_binary ${utc[1]} 2 4)
+                            pattern1=$(__um_search_binary ${utc[0]} 1 4)
+                            pattern2=$(__um_search_binary ${utc[1]} 2 4)
 
                             while IFS='|' read -r uuid id _
                             do
@@ -205,8 +205,8 @@ _search()
                             done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$")
                         elif (( ${#utc[@]} == 2 )) #ü
                         then
-                            pattern1=$(_search_binary ${utc[0]} 1 3)
-                            pattern2=$(_search_binary ${utc[1]} 2 3)
+                            pattern1=$(__um_search_binary ${utc[0]} 1 3)
+                            pattern2=$(__um_search_binary ${utc[1]} 2 3)
 
                             while IFS='|' read -r uuid id _
                             do
@@ -291,7 +291,7 @@ _search()
 
                             while :
                             do
-                                if ( _search id:^${ids[0]}$ 2>/dev/null )
+                                if ( __um_search id:^${ids[0]}$ 2>/dev/null )
                                 then
                                     break
                                 else
@@ -301,7 +301,7 @@ _search()
 
                             while :
                             do
-                                if ( _search id:^${ids[1]}$ 2>/dev/null )
+                                if ( __um_search id:^${ids[1]}$ 2>/dev/null )
                                 then
                                     break
                                 else
@@ -359,7 +359,7 @@ _search()
     (( ${#search[@]} > 0 )) || { echo "No matching." >&2  ; return 1 ; }
 }
 
-_search_binary()
+__um_search_binary()
 {
     declare b= e= begin= middle= end= pattern=
     declare -a array=()
@@ -400,7 +400,7 @@ _search_binary()
     printf '%s\n' "${array[middle]}"
 }
 
-_search_post()
+__um_search_post()
 {
     declare key=
 
@@ -442,7 +442,7 @@ _search_post()
             unset -v "search[$key]"
         done
 
-        _search_negativ
+        __um_search_negativ
 
         for key in "${!search[@]}"
         do
@@ -464,7 +464,7 @@ _search_post()
     fi
 }
 
-_search_negativ()
+__um_search_negativ()
 {
     declare pattern= file= f=
 
@@ -478,7 +478,7 @@ _search_negativ()
     done < <(find -H "${datadir}" -mindepth 2 -type f ! -name ${pattern} -print0)
 }
 
-_edit()
+__um_edit()
 {
     if (( $# == 0 ))
     then
@@ -494,7 +494,7 @@ _edit()
                 declare j= k= euuid= eid= file_tmp= date= md5_pre= md5_post= date_modification= uuid= date_build= uri_authority= uri_scheme= uri_scheme_specific_part= uri_scheme_specific_part_description= uri_scheme_specific_part_hierarchy= uri_scheme_specific_part_name= uri_scheme_specific_part_id=
                 declare -a uri_scheme_specific_part_reference=() uri_scheme_specific_part_tag=()
 
-                read -r euuid eid < <(_main search "$i")
+                read -r euuid eid < <(__um_main search "$i")
                 if (( euuid && eid ))
                 then
                     {
@@ -546,7 +546,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
     fi
 }
 
-_add()
+__um_add()
 {
     declare i= uri= name= description= hierarchy= scheme= authority= part= succeeded= date= bd= md= id= auuid= aid= uuid=
     declare -a references tags=()
@@ -558,7 +558,7 @@ _add()
         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
         then
             { echo "Wrong scheme." >&2 ; return 1 ; }
-        elif ( _search "uri:${uri}" 2> /dev/null )
+        elif ( __um_search "uri:${uri}" 2> /dev/null )
         then
             { echo "URI '$uri' has already been recorded." >&2 ; return 1 ; }
         fi
@@ -577,7 +577,7 @@ _add()
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." >&2 ; return 1 ; }
-                        elif ( _search uri:${uri} 2> /dev/null )
+                        elif ( __um_search uri:${uri} 2> /dev/null )
                         then
                             { echo "URI '$uri' has already been recorded." >&2 ; return 1 ; }
                         fi
@@ -609,25 +609,25 @@ _add()
 
     bd=$date
     md=$date
-    id=$(_calculating_id)
+    id=$(__um_calculating_id)
     id=${id:-1}
 
     scheme=${uri%%:*}
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
-    read -r auuid aid _ < <(_main search "authority:^${authority}$")
+    read -r auuid aid _ < <(__um_main search "authority:^${authority}$")
 
     if (( auuid && aid ))
     then
         uuid=$auuid
         pushd "$uuid" >/dev/null
         printf '%s\n' "Authority is already recorded at file://${datadir}/${auuid} ." >&2
-        _add_print && succeeded=succeeded
+        __um_add_print && succeeded=succeeded
     else
-        uuid=$(_random 16)
+        uuid=$(__um_random 16)
         mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." >&2
         pushd "$uuid" >/dev/null
-        _add_print && succeeded=succeeded
+        __um_add_print && succeeded=succeeded
     fi
 
     if [[ $succeeded ]]
@@ -640,7 +640,7 @@ _add()
     fi
 }
 
-_add_print()
+__um_add_print()
 {
     declare j= k=
 
@@ -670,7 +670,7 @@ uri_scheme_specific_part_id=$id" >&3
     exec 3<&-
 }
 
-_delete()
+__um_delete()
 {
     if (( $# == 0 ))
     then
@@ -707,7 +707,7 @@ _delete()
                             ;;
                 esac
             fi
-        done 3<&0 < <(_main search "$@")
+        done 3<&0 < <(__um_main search "$@")
 
         if (( ${#deletion[@]} != 0 ))
         then
@@ -726,7 +726,7 @@ _delete()
     fi
 }
 
-_modify()
+__um_modify()
 {
     declare i= j= k= tag= ref= record= modify_all= date= response=
     declare -a tags references=() modification=()
@@ -772,7 +772,7 @@ _modify()
                         mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*:}\"$/d"
                         ;;
                 tag+*)
-                        index=$(_random 4)
+                        index=$(__um_random 4)
                         mods[i]="-e $ i uri_scheme_specific_part_tag[${index}]=\"${mods[i]#*:}\""
                         ;;
                 reference:*)
@@ -790,7 +790,7 @@ _modify()
                         mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*:}$/d"
                         ;;
                 reference+*)
-                        index=$(_random 4)
+                        index=$(__um_random 4)
                         mods[i]="-e $ i uri_scheme_specific_part_reference[${index}]=${mods[i]#*:}"
                         ;;
                 *)
@@ -828,7 +828,7 @@ _modify()
                             ;;
                 esac
             fi
-        done 3<&0 < <(_main search "${patterns[@]}")
+        done 3<&0 < <(__um_main search "${patterns[@]}")
 
         if (( ${#modification[@]} != 0 ))
         then
@@ -843,7 +843,7 @@ _modify()
     fi
 }
 
-_list()
+__um_list()
 {
     if (( $# == 0 ))
     then
@@ -854,7 +854,7 @@ _list()
             find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n 'p'
         fi
     else
-        mapfile -t < <(_main search "$@")
+        mapfile -t < <(__um_main search "$@")
         if [[ $build_uri ]]
         then
             find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null fgrep -h -f <(printf '"%s"\n' ${MAPFILE[@]// /\"|\"}) | sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
@@ -864,7 +864,7 @@ _list()
     fi
 }
 
-_cloud()
+__um_cloud()
 {
     declare field=
 
@@ -895,7 +895,7 @@ _cloud()
     find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d'|' -f"${field}" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
 }
 
-_dependency_search()
+__um_dependency_search()
 {
     declare val=$1 pattern= id= ref=
 
@@ -915,7 +915,7 @@ _dependency_search()
             {
                 for i in ${ref//;/ }
                 do
-                    [[ ! ${dependencies[$i]} ]] && _dependency_search "^${i}$" && break
+                    [[ ! ${dependencies[$i]} ]] && __um_dependency_search "^${i}$" && break
                 done
             }
         done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$")
@@ -927,7 +927,7 @@ _dependency_search()
     fi
 }
 
-_dependency_do()
+__um_dependency_do()
 {
     declare -A deps children
     declare -a ch=() tsorted=() new_children=()
@@ -990,7 +990,7 @@ _dependency_do()
         {
             if [[ $print_desc ]]
             then
-                printf '%d %s\n' "$k" "$(_main list -u id:^${k}$ | cut -d '|' -f5)"
+                printf '%d %s\n' "$k" "$(__um_main list -u id:^${k}$ | cut -d '|' -f5)"
                 for m in ${children[$k]}
                 do
                     indd=$ind
@@ -998,10 +998,10 @@ _dependency_do()
                     then
                         for n in ${m//_/ }
                         do
-                            printf '%*d %s\n' "$((indd+=4))" "$n" "$(_main list -u id:^${n}$ | cut -d '|' -f5)"
+                            printf '%*d %s\n' "$((indd+=4))" "$n" "$(__um_main list -u id:^${n}$ | cut -d '|' -f5)"
                         done
                     else
-                        printf '%*d %s\n' "$((indd+4))" "$m" "$(_main list -u id:^${m}$ | cut -d '|' -f5)"
+                        printf '%*d %s\n' "$((indd+4))" "$m" "$(__um_main list -u id:^${m}$ | cut -d '|' -f5)"
                     fi
                 done
             else
@@ -1024,7 +1024,7 @@ _dependency_do()
     done
 }
 
-_tags()
+__um_tags()
 {
     declare id=
 
@@ -1032,22 +1032,22 @@ _tags()
     then
         while read -r _ id
         do
-            printf '%s\n    %s\n' "${id} $(_main list -u id:^${id}$ | cut -d '|' -f5)" "$(_main list id:^${id}$ | cut -d '|' -f11 | sed -e 's/"//g;s/;/ /g')"
-        done < <(_main search "$@")
+            printf '%s\n    %s\n' "${id} $(__um_main list -u id:^${id}$ | cut -d '|' -f5)" "$(__um_main list id:^${id}$ | cut -d '|' -f11 | sed -e 's/"//g;s/;/ /g')"
+        done < <(__um_main search "$@")
     else
         while read -r _ id
         do
-            printf '%s %s\n' "$id" "$(_main list -u id:^${id}$ | cut -d '|' -f5)"
-        done < <(_main search "$@")
+            printf '%s %s\n' "$id" "$(__um_main list -u id:^${id}$ | cut -d '|' -f5)"
+        done < <(__um_main search "$@")
     fi
 }
 
-_info()
+__um_info()
 {
     printf '%s\n' "Authorities: $(find -H "${datadir}" -maxdepth 1 -type d ! -name _index ! -name urimark | wc -l)" "URIs: $(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n '$=')"
 }
 
-_rebuild()
+__um_rebuild()
 {
     declare ruuid= succeeded= dir=
     declare -g -a dir_stack=()
@@ -1063,7 +1063,7 @@ _rebuild()
         do
             (( ruuid )) && succeeded=succeeded && pushd "$ruuid" >/dev/null
             unset -v ruuid
-        done < <(_main search "$@")
+        done < <(__um_main search "$@")
     fi
 
     if [[ $succeeded ]]
@@ -1075,7 +1075,7 @@ _rebuild()
     fi
 }
 
-_rebuild_index()
+__um_rebuild_index()
 {
     shopt -s extglob
     declare dir= i=
@@ -1121,7 +1121,7 @@ _rebuild_index()
     shopt -u extglob
 }
 
-_random()
+__um_random()
 {
     declare random=
 
@@ -1129,11 +1129,11 @@ _random()
     printf '%s\n' "${random// /}"
 }
 
-_calculating_id() { printf '%s\n' "$(($(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs --null cut -d "|" -f2 | tr -d '"' | sort -n | tail -n1)+1))" ; }
+__um_calculating_id() { printf '%s\n' "$(($(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs --null cut -d "|" -f2 | tr -d '"' | sort -n | tail -n1)+1))" ; }
 
-_delete_empty_dirs() { find -H "${datadir}" -maxdepth 1 -type d -empty -delete ; }
+__um_delete_empty_dirs() { find -H "${datadir}" -maxdepth 1 -type d -empty -delete ; }
 
-_main()
+__um_main()
 {
     declare path_absolute= non_interactive= mod= build_uri= search_specific_tree= print_desc= follow_note= print_tags=
     declare -g -a mods=() patterns=()
@@ -1148,17 +1148,17 @@ _main()
                 else
                     shift 1
                 fi
-                _search "$@" && _search_post
+                __um_search "$@" && __um_search_post
                 unset -v search operators path_absolute
                 ;;
         e|edit)
                 shift 1
-                _edit "$@" && _rebuild_index && echo "Done."
+                __um_edit "$@" && __um_rebuild_index && echo "Done."
                 unset -v dir_stack
                 ;;
         a|add)
                 shift 1
-                _add "$@" && _rebuild_index && echo "Done."
+                __um_add "$@" && __um_rebuild_index && echo "Done."
                 unset -v dir_stack
                 ;;
         d|delete)
@@ -1169,7 +1169,7 @@ _main()
                 else
                     shift 1
                 fi
-                _delete "$@" && { _delete_empty_dirs ; _rebuild_index ; echo "Done." >&2 ; }
+                __um_delete "$@" && { __um_delete_empty_dirs ; __um_rebuild_index ; echo "Done." >&2 ; }
                 unset -v dir_stack non_interactive
                 ;;
         m|modify)
@@ -1202,7 +1202,7 @@ _main()
                                 ;;
                     esac
                 done
-                _modify && _rebuild_index && echo "Done." >&2
+                __um_modify && __um_rebuild_index && echo "Done." >&2
                 unset -v dir_stack non_interactive mod mods patterns
                 ;;
         l|list)
@@ -1213,12 +1213,12 @@ _main()
                 else
                     shift 1
                 fi
-                _list "$@"
+                __um_list "$@"
                 unset -v build_uri
                 ;;
         c|cloud)
                 shift 1
-                _cloud "$1"
+                __um_cloud "$1"
                 ;;
         t|tags)
                 if [[ ${2#-} =~ (p|print-tags) ]]
@@ -1228,12 +1228,12 @@ _main()
                 else
                     shift 1
                 fi
-                _tags "$@"
+                __um_tags "$@"
                 unset -v print_tags
                 ;;
         i|info)
                 shift 1
-                _info
+                __um_info
                 ;;
         D|dep)
                 shift 1
@@ -1260,24 +1260,24 @@ _main()
                                 ;;
                     esac
                 done
-                _dependency_search "$1" | _dependency_do
+                __um_dependency_search "$1" | __um_dependency_do
                 unset -v dependencies search_specific_tree print_desc follow_note
                 ;;
         r|rebuild)
                 shift 1
-                _rebuild "$@" && _rebuild_index && echo "Done." >&2
+                __um_rebuild "$@" && __um_rebuild_index && echo "Done." >&2
                 unset -v dir_stack
                 ;;
         h|help)
                 shift 1
-                _help
+                __um_help
                 ;;
         v|version)
                 shift 1
-                _version
+                __um_version
                 ;;
         *)
-                { printf 'USAGE: %s\n' "$(_usage)" >&2 ; return 1 ; }
+                { printf 'USAGE: %s\n' "$(__um_usage)" >&2 ; return 1 ; }
                 ;;
     esac
 }
@@ -1293,4 +1293,4 @@ declare -rg \
 [[ -f $datadir ]] && { echo "Could not create Data Dir." >&2 ; exit 1 ; }
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
 
-_main "$@"
+__um_main "$@"
