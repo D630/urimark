@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.4" ; }
+__um_version() { echo "0.1.1.5" ; }
 
 __um_usage()
 {
@@ -662,7 +662,7 @@ __um_add()
                         IFS=';' read -r -a tags <<< "${i#*=}"
                         ;;
                 reference=*)
-                        IFS=',' read -r -a references <<< "${i#*=}"
+                        IFS=';' read -r -a references <<< "${i#*=}"
                         ;;
             esac
         done
@@ -699,11 +699,11 @@ __um_add()
 
     if [[ $succeeded ]]
     then
-        printf '%s\n' "New URI with id ${id} has been recorded." >&2
+        printf '%s\n' "New URI with id ${id} has been recorded." 1>&2
         dir_stack+=($(dirs -l -p))
-        echo "Index is being rebuild..." >&2
+        echo "Index is being rebuild..." 1>&2
     else
-         { printf '%s\n' "URI has not been recorded." >&2 ; return 1 ; }
+         { printf '%s\n' "URI has not been recorded." 1>&2 ; return 1 ; }
     fi
 }
 
