@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.11" ; }
+__um_version() { echo "0.1.1.12" ; }
 
 __um_usage()
 {
@@ -1422,13 +1422,13 @@ __um_main()
                 unset -v build_uri
                 ;;
         modify)
-                for i in "${patterns[@]}"
+                for i in "${!patterns[@]}"
                 do
-                    [[ $i == mod ]] && mod=mod && unset -v "patterns[$i]" && continue
-                    [[ $mod == mod ]] && mods+=("$i") && unset -v "patterns[$i]"
+                    [[ ${patterns[$i]} == mod ]] && mod=mod && unset -v "patterns[$i]" && continue
+                    [[ $mod == mod ]] && mods+=("${patterns[$i]}") && unset -v "patterns[$i]"
                 done
-                __um_modify && __um_rebuild_index && echo "Done." >&2
-                unset -v dir_stack non_interactive mod mods patterns i
+                __um_modify && __um_rebuild_index && echo "Done." 1>&2
+                unset -v dir_stack non_interactive mod patterns i
                 ;;
         rebuild)
                 __um_rebuild "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
