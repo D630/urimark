@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.6" ; }
+__um_version() { echo "0.1.1.7" ; }
 
 __um_usage()
 {
@@ -596,6 +596,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
 
 __um_add()
 {
+    echo $@
     declare \
             aid= \
             authority= \
@@ -1282,55 +1283,60 @@ __um_main()
     declare \
             arg= \
             args= \
-            delim=
+            delim=\'
+
     for arg
     do
         arg=${arg#--}
         case $arg in
-            absolute-path)      args="${args}-P "                         ;;
-            add)                args="${args}-A "                         ;;
-            and)                args="${args}-a "                         ;;
-            "")                 args="${args}-- "                         ;;
-            authority=*)        args="${args}-Y ${arg#*=} "               ;;
-            bd=*)               args="${args}-B ${arg#*=} "               ;;
-            cloud=*)            args="${args}-c ${arg#*=} "               ;;
-            delete)             args="${args}-d "                         ;;
-            dep=*)              args="${args}-D ${arg#*=} "               ;;
-            description=*)      args="${args}-8 ${arg#*=} "               ;;
-            edit)               args="${args}-e "                         ;;
-            follow-node)        args="${args}-f "                         ;;
-            help)               args="${args}-h "                         ;;
-            hierarchy=*)        args="${args}-H ${arg#*=} "               ;;
-            id=*)               args="${args}-I ${arg#*=} "               ;;
-            info)               args="${args}-i "                         ;;
-            list)               args="${args}-l "                         ;;
-            md=*)               args="${args}-M ${arg#*=} "               ;;
-            mod)                args="${args}-9 "                         ;;
-            modify)             args="${args}-m "                         ;;
-            name=*)             args="${args}-N ${arg#*=} "               ;;
-            non-interactive)    args="${args}-n "                         ;;
-            not)                args="${args}-! "                         ;;
-            or)                 args="${args}-o "                         ;;
-            part=*)             args="${args}-T ${arg#*=} "               ;;
-            print-tags)         args="${args}-p "                         ;;
-            print-uri)          args="${args}-u "                         ;;
-            rebuild)            args="${args}-r "                         ;;
-            reference=*)        args="${args}-5 ${arg#*=} "               ;;
-            reference+=*)       args="${args}-6 ${arg#*+=} "              ;;
-            reference-=*)       args="${args}-7 ${arg#*-=} "              ;;
-            scheme=*)           args="${args}-S ${arg#*=} "               ;;
-            search)             args="${args}-s "                         ;;
-            specific-tree)      args="${args}-E "                         ;;
-            tag=*)              args="${args}-2 ${arg#*=} "               ;;
-            tag+=*)             args="${args}-3 ${arg#*+=} "              ;;
-            tag-=*)             args="${args}-4 ${arg#*-=} "              ;;
-            tags)               args="${args}-t "                         ;;
-            uri=*)              args="${args}-1 ${arg#*=} "               ;;
-            uuid=*)             args="${args}-0 ${arg#*=} "               ;;
-            version)            args="${args}-v "                         ;;
-            *)                  [[ ${arg:0:1} != - ]] && delim=\"
-                                args="${args}${arg} "
-                                delim=                                    ;;
+            absolute-path)      args="${args}-P "                               ;;
+            add)                args="${args}-A "                               ;;
+            and)                args="${args}-a "                               ;;
+            "")                 args="${args}-- "                               ;;
+            authority=*)        args="${args}-Y ${arg#*=} "                     ;;
+            bd=*)               args="${args}-B ${arg#*=} "                     ;;
+            cloud=*)            args="${args}-c ${arg#*=} "                     ;;
+            delete)             args="${args}-d "                               ;;
+            dep=*)              args="${args}-D ${arg#*=} "                     ;;
+            description=*)      args="${args}-8 ${delim}${arg#*=}${delim} "     ;;
+            edit)               args="${args}-e "                               ;;
+            follow-node)        args="${args}-f "                               ;;
+            help)               args="${args}-h "                               ;;
+            hierarchy=*)        args="${args}-H ${arg#*=} "                     ;;
+            id=*)               args="${args}-I ${arg#*=} "                     ;;
+            info)               args="${args}-i "                               ;;
+            list)               args="${args}-l "                               ;;
+            md=*)               args="${args}-M ${arg#*=} "                     ;;
+            mod)                args="${args}-9 "                               ;;
+            modify)             args="${args}-m "                               ;;
+            name=*)             args="${args}-N ${delim}${arg#*=}${delim} "     ;;
+            non-interactive)    args="${args}-n "                               ;;
+            not)                args="${args}-! "                               ;;
+            or)                 args="${args}-o "                               ;;
+            part=*)             args="${args}-T ${delim}${arg#*=}${delim} "     ;;
+            print-tags)         args="${args}-p "                               ;;
+            print-uri)          args="${args}-u "                               ;;
+            rebuild)            args="${args}-r "                               ;;
+            reference=*)        args="${args}-5 ${delim}${arg#*=}${delim} "     ;;
+            reference+=*)       args="${args}-6 ${delim}${arg#*+=}${delim} "    ;;
+            reference-=*)       args="${args}-7 ${delim}${arg#*-=}${delim} "    ;;
+            scheme=*)           args="${args}-S ${arg#*=} "                     ;;
+            search)             args="${args}-s "                               ;;
+            specific-tree)      args="${args}-E "                               ;;
+            tag=*)              args="${args}-2 ${delim}${arg#*=}${delim} "     ;;
+            tag+=*)             args="${args}-3 ${delim}${arg#*+=}${delim} "    ;;
+            tag-=*)             args="${args}-4 ${delim}${arg#*-=}${delim} "    ;;
+            tags)               args="${args}-t "                               ;;
+            uri=*)              args="${args}-1 ${delim}${arg#*=}${delim} "     ;;
+            uuid=*)             args="${args}-0 ${arg#*=} "                     ;;
+            version)            args="${args}-v "                               ;;
+            *)                  if [[ ${arg:0:1} != - ]]
+                                then
+                                    args="${args}${delim}${arg}${delim} "
+                                else
+                                    args="${args}${arg} "
+                                fi
+                                ;;
         esac
     done
 
@@ -1354,7 +1360,7 @@ __um_main()
 
     declare -gA dependencies
 
-    eval set -- $args
+    eval set -- "$args"
     while getopts :sPAaY:B:c:dD:8:efH:I:ilM:9mN:n!oT:pur5:6:7:S:E2:3:4:t0:1:hv opt
     do
         case $opt in
@@ -1469,4 +1475,4 @@ declare -r \
 [[ -f $datadir ]] && { echo "Could not create Data Dir." >&2 ; exit 1 ; }
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
 
-__um_main $*
+__um_main "$@"
