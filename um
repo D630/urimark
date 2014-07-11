@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.12" ; }
+__um_version() { echo "0.1.1.13" ; }
 
 __um_usage()
 {
@@ -910,14 +910,14 @@ __um_modify()
             echo "Records has been modified." 1>&2
             echo "Index is being rebuild..." 1>&2
         else
-            { echo "No Records has been modified." >&2 ; return 1 ; }
+            { echo "No Records has been modified." 1>&2 ; return 1 ; }
         fi
     fi
 }
 
 __um_list()
 {
-    if (( $# == 0 ))
+    if (($# == 0))
     then
         if [[ $build_uri ]]
         then
@@ -926,7 +926,7 @@ __um_list()
             find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n 'p'
         fi
     else
-        mapfile -t < <(__um_main -s $*)
+        mapfile -t < <(__um_main search "$@")
         if [[ $build_uri ]]
         then
             find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null fgrep -h -f <(printf '"%s"\n' ${MAPFILE[@]// /\"|\"}) | sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
