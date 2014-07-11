@@ -634,7 +634,7 @@ __um_add()
         read -re -p "Description: " description
         IFS=';' read -re -p "Tags: " -a tags
         read -re -p "Hierarchy: " hierarchy
-        IFS=',' read -re -p "References: " -a references
+        IFS=';' read -re -p "References: " -a references
     else
         for i
         do
