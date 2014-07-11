@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.19" ; }
+__um_version() { echo "0.1.1.20" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-t|-v)' ; }
 
@@ -102,7 +102,8 @@ ARGUMENTS
     <CFIELD>                    'scheme', 'authority', 'part',
                                 'hierarchy', 'tag' or 'reference'
     <DESC>*                     'string'
-    <DFIELD>*                   <ID> or <REF> specified by an integer
+    <DFIELD>*                   id or reference number specified by
+                                an integer (only one value; no range)
     <EEXP>*                     <UUID> or <ID>
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi)
