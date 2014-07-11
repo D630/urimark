@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.15" ; }
+__um_version() { echo "0.1.1.16" ; }
 
 __um_usage()
 {
@@ -1112,12 +1112,12 @@ __um_tags()
     then
         while read -r _ id
         do
-            printf '%s\n    %s\n' "${id} $(__um_main list -u id:^${id}$ | cut -d '|' -f5)" "$(__um_main list id:^${id}$ | cut -d '|' -f11 | sed -e 's/"//g;s/;/ /g')"
+            printf '%s\n    %s\n' "${id} $(__um_main list -u id=^${id}$ | cut -d '|' -f5)" "$(__um_main list id=^${id}$ | cut -d '|' -f11 | sed -e 's/"//g;s/;/ /g')"
         done < <(__um_main search "$@")
     else
         while read -r _ id
         do
-            printf '%s %s\n' "$id" "$(__um_main list -u id:^${id}$ | cut -d '|' -f5)"
+            printf '%s %s\n' "$id" "$(__um_main list -u id=^${id}$ | cut -d '|' -f5)"
         done < <(__um_main search "$@")
     fi
 }
