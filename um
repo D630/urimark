@@ -581,7 +581,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
                                     do
                                         printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
                                     done
-                                } > "${datadir}/${euuid}/${eid}" && { echo "Data set has been modified." >&2 ; dir_stack+=($(dirs -l -p)) ; echo "Index is being rebuild..." 1>&2 ; rm -- "$file_tmp" ; return 0 ; }
+                                } > "${datadir}/${euuid}/${eid}" && { echo "Data set has been modified." 1>&2 ; dir_stack+=($(dirs -l -p)) ; echo "Index is being rebuild..." 1>&2 ; rm -- "$file_tmp" ; return 0 ; }
                             else
                                 rm -- "$file_tmp"
                                 { echo "Data set has not been modified." 1>&2 ; return 1 ; }
@@ -1473,7 +1473,7 @@ declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
 declare -r datadir=${URIMARK_DATA:-${predir_datadir}/urimark}
 declare -r \
            CDPATH=$datadir \
-           editor=${EDITOR:-nano}
+           editor=${X_TTY_EDITOR:-nano}
 
 [[ -f $datadir ]] && { echo "Could not create Data Dir." >&2 ; exit 1 ; }
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
