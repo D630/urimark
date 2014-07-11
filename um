@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.16" ; }
+__um_version() { echo "0.1.1.17" ; }
 
 __um_usage()
 {
@@ -1136,7 +1136,7 @@ __um_rebuild()
 
     declare -ga dir_stack=()
 
-    if (( $# == 0 ))
+    if (($# == 0))
     then
         while IFS= read -d '' -r
         do
@@ -1152,10 +1152,10 @@ __um_rebuild()
 
     if [[ $succeeded ]]
     then
-        dir_stack+=( $(dirs -l -p) )
-        { echo "Index is being rebuild..." >&2 ; return 0 ; }
+        dir_stack+=($(dirs -l -p))
+        { echo "Index is being rebuild..." 1>&2 ; return 0 ; }
     else
-        { echo "No index has been rebuild." >&2 ; return 1 ; }
+        { echo "No index has been rebuild." 1>&2 ; return 1 ; }
     fi
 }
 
