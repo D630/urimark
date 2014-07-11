@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.10" ; }
+__um_version() { echo "0.1.1.11" ; }
 
 __um_usage()
 {
@@ -813,66 +813,66 @@ __um_modify()
 
     declare -ga dir_stack=()
 
-    if (( ${#mods[@]} == 0 ))
+    if ((${#mods[@]} == 0))
     then
-         { printf '%s\n' "We need to specify a modification." >&2 ; return 1 ; }
+         { printf '%s\n' "We need to specify a modification." 1>&2 ; return 1 ; }
     else
         for i in "${!mods[@]}"
         do
             case ${mods[i]} in
-                authority*)
-                        mods[i]="-e s|^uri_authority=.*$|uri_authority=\"${mods[i]#*:}\"|"
+                authority=*)
+                        mods[i]="-e s|^uri_authority=.*$|uri_authority=\"${mods[i]#*=}\"|"
                         ;;
-                scheme*)
-                        mods[i]="-e s|^uri_scheme=.*$|uri_scheme=\"${mods[i]#*:}\"|"
+                scheme=*)
+                        mods[i]="-e s|^uri_scheme=.*$|uri_scheme=\"${mods[i]#*=}\"|"
                         ;;
-                part*)
-                        mods[i]="-e s|^uri_scheme_specific_part=.*$|uri_scheme_specific_part=\"${mods[i]#*:}\"|"
+                part=*)
+                        mods[i]="-e s|^uri_scheme_specific_part=.*$|uri_scheme_specific_part=\"${mods[i]#*=}\"|"
                         ;;
-                name*)
-                        mods[i]="-e s|^uri_scheme_specific_part_name=.*$|uri_scheme_specific_part_name=\"${mods[i]#*:}\"|"
+                name=*)
+                        mods[i]="-e s|^uri_scheme_specific_part_name=.*$|uri_scheme_specific_part_name=\"${mods[i]#*=}\"|"
                         ;;
-                description*)
-                        mods[i]="-e s|^uri_scheme_specific_part_description=.*$|uri_scheme_specific_part_description=\"${mods[i]#*:}\"|"
+                description=*)
+                        mods[i]="-e s|^uri_scheme_specific_part_description=.*$|uri_scheme_specific_part_description=\"${mods[i]#*=}\"|"
                         ;;
-                hierarchy*)
-                        mods[i]="-e s|^uri_scheme_specific_part_hierarchy=.*$|uri_scheme_specific_part_hierarchy=\"${mods[i]#*:}\"|"
+                hierarchy=*)
+                        mods[i]="-e s|^uri_scheme_specific_part_hierarchy=.*$|uri_scheme_specific_part_hierarchy=\"${mods[i]#*=}\"|"
                         ;;
-                tag:*)
+                tag=*)
                         for j in "${patterns[@]}"
                         do
-                            [[ $j == tag:* ]] && tags+=( "${j#*:}" )
+                            [[ $j == tag=* ]] && tags+=("${j#*=}")
                         done
                         printf -v tag '%s|' "${tags[@]//^/}"
                         tag=${tag//$/}
                         tag=${tag%|*}
 
-                        mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"(${tag})\"$|\1\"${mods[i]#*:}\"|"
+                        mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"(${tag})\"$|\1\"${mods[i]#*=}\"|"
                         ;;
-                tag-*)
-                        mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*:}\"$/d"
+                tag-=*)
+                        mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*=}\"$/d"
                         ;;
-                tag+*)
+                tag+=*)
                         index=$(__um_random 4)
-                        mods[i]="-e $ i uri_scheme_specific_part_tag[${index}]=\"${mods[i]#*:}\""
+                        mods[i]="-e $ i uri_scheme_specific_part_tag[${index}]=\"${mods[i]#*=}\""
                         ;;
-                reference:*)
+                reference=*)
                         for k in "${patterns[@]}"
                         do
-                            [[ $k == reference:* ]] && references+=( "${k#*:}" )
+                            [[ $k == reference=* ]] && references+=("${k#*=}")
                         done
                         printf -v ref '%s|' "${references[@]//^/}"
                         ref=${ref//$/}
                         ref=${ref%|*}
 
-                        mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)(${ref})$|\1${mods[i]#*:}|"
+                        mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)(${ref})$|\1${mods[i]#*=}|"
                         ;;
-                reference-*)
-                        mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*:}$/d"
+                reference-=*)
+                        mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*=}$/d"
                         ;;
-                reference+*)
+                reference+=*)
                         index=$(__um_random 4)
-                        mods[i]="-e $ i uri_scheme_specific_part_reference[${index}]=${mods[i]#*:}"
+                        mods[i]="-e $ i uri_scheme_specific_part_reference[${index}]=${mods[i]#*=}"
                         ;;
                 *)
                         unset -v "mods[i]"
@@ -884,40 +884,31 @@ __um_modify()
         do
             if [[ $modify_all || $non_interactive ]]
             then
-                modification+=( "${datadir}/${record% *}/${record#* }" )
+                modification+=("${datadir}/${record% *}/${record#* }")
                 pushd "${record% *}" >/dev/null
             else
                 printf 'UUID: %s\nID:   %s\n' $record
                 read -u 3 -p "Do you really wanne modify this record? (y/n/all/quit) " response
-
                 case $response in
-                    all)
-                            modify_all=modify_all
-                            ;&
+                    all)    modify_all=modify_all   ;&
                     y|yes)
-                            modification+=( "${datadir}/${record% *}/${record#* }" )
+                            modification+=("${datadir}/${record% *}/${record#* }")
                             pushd "${record% *}" >/dev/null
                             ;;
-                    n|no)
-                            continue
-                            ;;
-                    quit)
-                            { unset -v modification ; break ; }
-                            ;;
-                    *)
-                            continue
-                            ;;
+                    n|no)   continue ;;
+                    quit)   unset -v modification ; break   ;;
+                    *)      continue    ;;
                 esac
             fi
         done 3<&0 < <(__um_main search "${patterns[@]}")
 
-        if (( ${#modification[@]} != 0 ))
+        if ((${#modification[@]} != 0))
         then
-            dir_stack+=( $(dirs -l -p) )
+            dir_stack+=($(dirs -l -p))
             date=$(date --utc --date now +%s)
             printf '%q\n' "${modification[@]}" | xargs -d '\n' sed -i -r -e "/date_modification=.*/ c date_modification=${date}" "${mods[@]}"
-            echo "Records has been modified." >&2
-            echo "Index is being rebuild..." >&2
+            echo "Records has been modified." 1>&2
+            echo "Index is being rebuild..." 1>&2
         else
             { echo "No Records has been modified." >&2 ; return 1 ; }
         fi
