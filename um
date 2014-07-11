@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.5" ; }
+__um_version() { echo "0.1.1.6" ; }
 
 __um_usage()
 {
@@ -729,12 +729,12 @@ uri_scheme_specific_part_id=$id" >&3
     for j in "${!references[@]}"
     do
         printf '%s\n' "uri_scheme_specific_part_reference[$j]=${references[$j]}"
-    done >&3
+    done 1>&3
 
     for k in "${!tags[@]}"
     do
         printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${tags[$k]}\""
-    done >&3
+    done 1>&3
 
     exec 3<&-
 }
