@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.13" ; }
+__um_version() { echo "0.1.1.14" ; }
 
 __um_usage()
 {
@@ -941,13 +941,13 @@ __um_cloud()
     declare field=
 
     case ${1#-} in
-        authority)  field=6                                                    ;;
-        hierarchy)  field=10                                                   ;;
-        part)       field=7                                                    ;;
-        reference)  field=12                                                   ;;
-        scheme)     field=5                                                    ;;
-        tag)        field=11                                                   ;;
-        *)          { printf '%s\n' "We need an argument." >&2 ; return 1 ; } ;;
+        authority)  field=6                                           ;;
+        hierarchy)  field=10                                          ;;
+        part)       field=7                                           ;;
+        reference)  field=12                                          ;;
+        scheme)     field=5                                           ;;
+        tag)        field=11                                          ;;
+        *)          { echo "We need an argument." 1>&2 ; return 1 ; } ;;
     esac
 
     find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d'|' -f "${field}" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
