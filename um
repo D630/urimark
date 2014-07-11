@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.9" ; }
+__um_version() { echo "0.1.1.10" ; }
 
 __um_usage()
 {
@@ -754,52 +754,41 @@ __um_delete()
 
     declare -ga dir_stack=()
 
-    if (( $# == 0 ))
+    if (($# == 0))
     then
-        { printf '%s\n' "We need an argument." >&2 ; return 1 ; }
+        { echo "We need an argument." 1>&2 ; return 1 ; }
     else
         while read -r
         do
             if [[ $delete_all || $non_interactive ]]
             then
-                deletion+=( "$REPLY" )
+                deletion+=("$REPLY")
             else
                 printf 'UUID: %s\nID:   %s\n' $REPLY
                 read -u 3 -p "Do you really wanne delete this record? (y/n/all/quit) " response
-
                 case $response in
-                    all)
-                            delete_all=delete_all
-                            ;&
-                    y|yes)
-                            deletion+=( "$REPLY" )
-                            ;;
-                    n|no)
-                            continue
-                            ;;
-                    quit)
-                            { unset -v deletion ; break ; }
-                            ;;
-                    *)
-                            continue
-                            ;;
+                    all)    delete_all=delete_all        ;&
+                    y|yes)  deletion+=("$REPLY")         ;;
+                    n|no)   continue                    ;;
+                    quit)   unset -v deletion ; break   ;;
+                    *)      continue                    ;;
                 esac
             fi
         done 3<&0 < <(__um_main search "$@")
 
-        if (( ${#deletion[@]} != 0 ))
+        if ((${#deletion[@]} != 0))
         then
             for d in "${deletion[@]}"
             do
                 pushd "${d% *}" >/dev/null
                 rm -- "${datadir}/${d% *}/${d#* }"
             done
-            dir_stack+=( $(dirs -l -p) )
+            dir_stack+=($(dirs -l -p))
             rm -- "${datadir}/${d% *}/_index" 2>/dev/null
-            echo "Records has been deleted." >&2
-            echo "Index is being rebuild..." >&2
+            echo "Records has been deleted." 1>&2
+            echo "Index is being rebuild..." 1>&2
         else
-            { echo "No Records has been deleted." >&2 ; return 1 ; }
+            { echo "No Records has been deleted." 1>&2 ; return 1 ; }
         fi
     fi
 }
