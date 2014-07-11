@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.14" ; }
+__um_version() { echo "0.1.1.15" ; }
 
 __um_usage()
 {
@@ -1025,7 +1025,7 @@ __um_dependency_do()
                     continue
                 else
                     deps[${parent} ${c}]=${c}
-                    ch+=( $c )
+                    ch+=($c)
                 fi
             done
             children[$parent]=${ch[@]}
@@ -1034,11 +1034,11 @@ __um_dependency_do()
         }
     done
 
-    [[ ! ${deps[@]} ]] && { echo "No matching." >&2 ; return 1 ; }
+    [[ ! ${deps[@]} ]] && { echo "Dependency: No matching." 1>&2 ; return 1 ; }
 
     mapfile -t tsorted < <(printf '%s\n' "${!deps[@]}" | tsort 2>/dev/null)
 
-    for (( i=${#tsorted[@]}-1 ; i >= 0 ; --i ))
+    for ((i=${#tsorted[@]}-1 ; i >= 0 ; --i))
     do
         [[ ${children[${tsorted[$i]}]} ]] &&
         {
@@ -1047,9 +1047,9 @@ __um_dependency_do()
             do
                 if [[ ${children[$j]} ]]
                 then
-                    new_children+=( ${j}_${children[$j]// /_} )
+                    new_children+=(${j}_${children[$j]// /_})
                 else
-                    new_children+=( ${j} )
+                    new_children+=(${j})
                 fi
             done
             children[${tsorted[$i]}]=${new_children[@]}
@@ -1064,13 +1064,13 @@ __um_dependency_do()
         skip=
         for l in ${children[@]//_/ }
         do
-            (( $k == $l )) && skip=skip && break
+            (($k == $l)) && skip=skip && break
         done
         [[ ! $skip ]] &&
         {
             if [[ $print_desc ]]
             then
-                printf '%d %s\n' "$k" "$(__um_main list -u id:^${k}$ | cut -d '|' -f5)"
+                printf '%d %s\n' "$k" "$(__um_main list -u id=^${k}$ | cut -d '|' -f5)"
                 for m in ${children[$k]}
                 do
                     indd=$ind
@@ -1078,10 +1078,10 @@ __um_dependency_do()
                     then
                         for n in ${m//_/ }
                         do
-                            printf '%*d %s\n' "$((indd+=4))" "$n" "$(__um_main list -u id:^${n}$ | cut -d '|' -f5)"
+                            printf '%*d %s\n' "$((indd+=4))" "$n" "$(__um_main list -u id=^${n}$ | cut -d '|' -f5)"
                         done
                     else
-                        printf '%*d %s\n' "$((indd+4))" "$m" "$(__um_main list -u id:^${m}$ | cut -d '|' -f5)"
+                        printf '%*d %s\n' "$((indd+4))" "$m" "$(__um_main list -u id=^${m}$ | cut -d '|' -f5)"
                     fi
                 done
             else
