@@ -1428,7 +1428,7 @@ __um_main()
                     [[ $mod == mod ]] && mods+=("${patterns[$i]}") && unset -v "patterns[$i]"
                 done
                 __um_modify && __um_rebuild_index && echo "Done." 1>&2
-                unset -v dir_stack non_interactive mod patterns i
+                unset -v dir_stack non_interactive mod mods patterns i
                 ;;
         rebuild)
                 __um_rebuild "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
