@@ -33,83 +33,88 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.17" ; }
+__um_version() { echo "0.1.1.18" ; }
 
-__um_usage()
-{
-    printf 'um (-h|-v| )
-    (-a|-c|-d|-D|-e|-l|-m|-r|-s|-t|-i)
-    [-A|-n|-u|-T|-f|-p]'
-}
+__um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-t|-v)' ; }
 
 __um_help()
 {
-    printf "USAGE
------
-$(__um_usage)
-
-OPTIONS
--------
-    -h,  -help
-    -v,  -version
+    printf "$(__um_usage)
 
 SUBCOMMANDS
 -----------
-    ACTION                  OPTION          ARG
-    ------                  ------          --------
-    -a, -add                                [ <AFIELD> ... ]
-    -c, -cloud                              <CFIELD>
-    -d, -delete             -n              [ <EXP> ... ]
-    -D, -dep                -u, -T , -f     <DFIELD>
-    -e, -edit                               <EEXP> ...
-    -l, -list               -u              [ <EXP> ... ]
-    -m, -modify             -n              [ <EXP> ... ] 'MOD' <MEXP> ...
-    -r, -rebuild                            [ <EXP> ... ]
-    -s, -search             -A              [ <EXP> ... ]
-    -t, -tags               -p              [ <EXP> ... ]
-    -i, -info
+    ACTION                      OPT
+    ------                      ---
+    -A, --add                   -1,-2,-5,-8,-H,-N
+    -c, --cloud=<CFIELD>
+    -d, --delete                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
+                                -o,-S,-T,-Y
+    -D, --dep=<DFIELD>          -E,-f,-u
+    -e, --edit                  <EEXP>
+    -h, --help
+    -i, --info
+    -l, --list                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
+                                -S,-T,-u,-Y
+    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
+                                -H,-I,-M,-N,-n,-o,-S,-T,-Y
+    -r, --rebuild               -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
+                                -S,-T,-Y
+    -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
+                                -P,-S,-T,-u,-Y
+    -t, --tags                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
+                                -p,-S,-T,-u,-Y
+    -v, --version
 
-    OPTION                  ARG
-    ------                  ---
-    -A, -absolute-path
-    -n, -non-interactive
-    -u, -print-uri
-    -T, -specific-tree
-    -f, -follow-note
-    -p, -print-tags
+    OPT                         ARG
+    ---                         ---
+    -0, --uuid=                 <UUID>
+    -1, --uri=                  <URI>
+    -2, --tag=                  <TAG>
+    -3, --tag+=                 <TAG>
+    -4, --tag-=                 <TAG>
+    -5, --reference=            <REF>
+    -6, --reference+=           <REF>
+    -7, --reference-=           <REF>
+    -8, --description=          <DESC>
+    -9, --mod
+    -a, --and
+    -B, --bd=                   <BD>
+    -E, --specific-tree
+    -f, --follow-node
+    -H, --hierarchy=            <HIER>
+    -I, --id=                   <ID>
+    -M, --md=                   <MD>
+    -N, --name=                 <NAME>
+    -n, --non-interactive
+    -!, --not
+    -o, --or
+    -P, --absolute-path
+    -p, --print-tags
+    -S, --scheme=               <SCHEME>
+    -T, --part=                 <PART>
+    -u, --print-uri
+    -Y, --authority=            <AUTH>
 
 ARGUMENTS
 ---------
-    <AFIELD>    'uri:string', 'name:string', 'description:string',
-                'hierarchy:/foo/foo', 'tag:\"foo;foo;foo\"' or
-                'reference:int,int,int'.
-    <CFIELD>    'scheme', 'authority', 'part', 'hierarchy', 'tag' or
-                'reference'.
-    <DFIELD>*   ID or Reference number specified by an integer.
-    <EXP>
-                <UUID>*     'uuid:uuid'
-                <ID>*       'id:int', 'id:int,int', 'id:int-int' (or
-                            combination).
-                <URI>       'uri:string'
-                <AUTH>*     'authority:string'
-                <SCHEME>*   'scheme:string'
-                <PART>*     'part:string'
-                <MD>*       'md:date' or 'md:date,date'.
-                <BD>*       'bd:date' or 'md:date,date'
-                <NAME>*     'name:string'
-                <DESC>*     'description:string'
-                <HIER>*     'hierarchy:/foo/foo'
-                <TAG>*      'tag:\"foo;foo;foo\"'
-                <REF>*      'reference:int' or 'reference:int,int'.
-                <AND>       and
-                <OR>        or
-                <NOT>       not
-    <EEXP>*     <UUID> or <ID>.
-    <MEXP>      'authority:string', 'scheme:string', 'part:string',
-                'name:string', 'description:string',
-                'hierarchy:/foo/foo', 'tag:string', 'tag-:string',
-                'tag+:string', 'reference:reference',
-                'reference-:reference' or 'reference+:reference'
+    <AUTH>*                     'string'
+    <BD>*                       'date' or 'date,date'
+    <CFIELD>                    'scheme', 'authority', 'part',
+                                'hierarchy', 'tag' or 'reference'
+    <DESC>*                     'string'
+    <DFIELD>*                   <ID> or <REF> specified by an integer
+    <EEXP>*                     <UUID> or <ID>
+    <HIER>*                     '/foo/bar'
+    <ID>*                       'int', 'int,int', 'int-int' (or combi)
+    <MD>*                       'date' or 'date,date'
+    <NAME>*                     'string'
+    <PART>*                     'string'
+    <REF>*                      'int' or 'int,int'
+    <SCHEME>''                  'http','https','ftp','ftps','dav','davs',
+                                'gopher','webdav','webdavs
+    <TAG>*                      'string' or 'string;string;string'
+    <URI>                       'string'
+    <UUID>*                     'uuid'
 
     *regextype: posix-egrep
 "
