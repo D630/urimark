@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.18" ; }
+__um_version() { echo "0.1.1.19" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-t|-v)' ; }
 
@@ -1460,7 +1460,6 @@ declare -r \
            CDPATH=$datadir \
            editor=${X_TTY_EDITOR:-nano}
 
-[[ -f $datadir ]] && { echo "Could not create Data Dir." >&2 ; exit 1 ; }
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
 
 __um_main "$@"
