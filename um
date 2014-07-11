@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.8" ; }
+__um_version() { echo "0.1.1.9" ; }
 
 __um_usage()
 {
@@ -539,16 +539,16 @@ __um_edit()
                uri_scheme_specific_part_reference=() \
                uri_scheme_specific_part_tag=()
 
-    if (( $# == 0 ))
+    if (($# == 0))
     then
-        { echo "No Arguments" >&2 ; return 1 ; }
+        { echo "No Arguments" 1>&2 ; return 1 ; }
     else
         for i
         do
-            if [[ ${i%:*} =~ (id|uri) ]]
+            if [[ ${i%=*} =~ (id|uri) ]]
             then
                 read -r euuid eid < <(__um_main search "$i")
-                if (( euuid && eid ))
+                if ((euuid && eid))
                 then
                     {
                         file_tmp=$(mktemp ${TMPDIR:-/tmp}/urimark.XXXXXX) && cp -- "${datadir}/${euuid}/${eid}" "$file_tmp" &&
@@ -581,19 +581,18 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
                                     do
                                         printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
                                     done
-                                } > "${datadir}/${euuid}/${eid}" && { echo "Data set has been modified." >&2 ; dir_stack+=( $(dirs -l -p) ) ; echo "Index is being rebuild..." >&2 ; rm -- "$file_tmp" ; return 0 ; }
-                                #rm -- "$file_tmp"
+                                } > "${datadir}/${euuid}/${eid}" && { echo "Data set has been modified." >&2 ; dir_stack+=($(dirs -l -p)) ; echo "Index is being rebuild..." 1>&2 ; rm -- "$file_tmp" ; return 0 ; }
                             else
                                 rm -- "$file_tmp"
-                                { echo "Data set has not been modified." >&2 ; return 1 ; }
+                                { echo "Data set has not been modified." 1>&2 ; return 1 ; }
                             fi
                         }
-                    } || { echo "Tmp File has not been created." >&2 ; return 1 ; }
+                    } || { echo "Tmp File has not been created." 1>&2 ; return 1 ; }
                 else
-                    { echo "No matching." >&2 ; return 1 ; }
+                    { echo "No matching." 1>&2 ; return 1 ; }
                 fi
             else
-                { echo "Search pattern '$i' is not allowed." >&2 ; return 1 ; }
+                { echo "Search pattern '$i' is not allowed." 1>&2 ; return 1 ; }
             fi
         done
     fi
