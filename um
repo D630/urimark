@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.2" ; }
+__um_version() { echo "0.1.1.4" ; }
 
 __um_usage()
 {
@@ -373,7 +373,7 @@ __um_search()
         done
     fi
 
-    ((${#search[@]} > 0)) || { echo "No matching." >&2  ; return 1 ; }
+    ((${#search[@]} > 0)) || { echo "Search: No matching." 1>&2 ; return 1 ; }
 }
 
 __um_search_binary()
@@ -625,10 +625,10 @@ __um_add()
         read -re -p "URI: " uri
         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
         then
-            { echo "Wrong scheme." >&2 ; return 1 ; }
-        elif (__um_search uri=${uri} 1>/dev/null 2>&1)
+            { echo "Wrong scheme." 1>&2 ; return 1 ; }
+        elif (__um_search uri=${uri} 2>/dev/null)
         then
-            { echo "URI '$uri' has already been recorded." >&2 ; return 1 ; }
+            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
         fi
         read -re -p "Name: " name
         read -re -p "Description: " description
@@ -639,34 +639,34 @@ __um_add()
         for i
         do
             case $i in
-                uri:*)
-                        uri=${i#*:}
+                uri=*)
+                        uri=${i#*=}
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
-                            { echo "Wrong scheme." >&2 ; return 1 ; }
-                        elif (__um_search uri=${uri} 1>/dev/null 2>&1)
+                            { echo "Wrong scheme." 1>&2 ; return 1 ; }
+                        elif (__um_search uri=${uri} 2>/dev/null)
                         then
-                            { echo "URI '$uri' has already been recorded." >&2 ; return 1 ; }
+                            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
                         fi
                         ;;
-                name:*)
-                        name=${i#*:}
+                name=*)
+                        name=${i#*=}
                         ;;
-                description:*)
-                        description=${i#*:}
+                description=*)
+                        description=${i#*=}
                         ;;
-                hierarchy:*)
-                        hierarchy=${i#*:}
+                hierarchy=*)
+                        hierarchy=${i#*=}
                         ;;
-                tag:*)
-                        IFS=';' read -r -a tags <<< "${i#*:}"
+                tag=*)
+                        IFS=';' read -r -a tags <<< "${i#*=}"
                         ;;
-                reference:*)
-                        IFS=',' read -r -a references <<< "${i#*:}"
+                reference=*)
+                        IFS=',' read -r -a references <<< "${i#*=}"
                         ;;
             esac
         done
-        [[ ! $uri ]] && { echo "We need an URI to record." >&2 ; return 1 ; }
+        [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
 
     date=$(date --utc --date now +%s)
@@ -683,16 +683,16 @@ __um_add()
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid _ < <(__um_main search authority=^${authority}$)
+    read -r auuid aid _ < <(__um_main search authority=^${authority}$ 2>/dev/null)
     if ((auuid && aid))
     then
         uuid=$auuid
         pushd "$uuid" 1>/dev/null
-        printf '%s\n' "Authority has already been recorded at file://${datadir}/${auuid} ." >&2
+        printf '%s\n' "Authority has already been recorded at file://${datadir}/${auuid} ." 1>&2
         __um_add_print && succeeded=succeeded
     else
         uuid=$(__um_random 8)
-        mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." >&2
+        mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." 1>&2
         pushd "$uuid" 1>/dev/null
         __um_add_print && succeeded=succeeded
     fi
@@ -957,30 +957,16 @@ __um_cloud()
     declare field=
 
     case ${1#-} in
-        scheme)
-                field=5
-                ;;
-        authority)
-                field=6
-                ;;
-        part)
-                field=7
-                ;;
-        hierarchy)
-                field=10
-                ;;
-        tag)
-                field=11
-                ;;
-        reference)
-                field=12
-                ;;
-        *)
-                { printf '%s\n' "We need an argument." >&2 ; return 1 ; }
-                ;;
+        authority)  field=6                                                    ;;
+        hierarchy)  field=10                                                   ;;
+        part)       field=7                                                    ;;
+        reference)  field=12                                                   ;;
+        scheme)     field=5                                                    ;;
+        tag)        field=11                                                   ;;
+        *)          { printf '%s\n' "We need an argument." >&2 ; return 1 ; } ;;
     esac
 
-    find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d'|' -f"${field}" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
+    find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d'|' -f "${field}" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
 }
 
 __um_dependency_search()
@@ -1280,7 +1266,7 @@ __um_delete_empty_dirs() { find -H "${datadir}" -maxdepth 1 -type d -empty -dele
 __um_check_args()
 {
     declare o=
-    if [[ ! $OPTARG =~ -.+ ]]
+    if [[ ! $OPTARG =~ ^-.+ ]]
     then
         for o
         do
@@ -1369,7 +1355,7 @@ __um_main()
     declare -gA dependencies
 
     eval set -- $args
-    while getopts :sPAaY:B:c:dD:8:efH:I:ilM:9mN:n!oT:pur5:6:7:S:E2:3:4:t1:0hv opt
+    while getopts :sPAaY:B:c:dD:8:efH:I:ilM:9mN:n!oT:pur5:6:7:S:E2:3:4:t0:1:hv opt
     do
         case $opt in
                 0)  __um_check_args "uuid=$OPTARG"                    ;;
