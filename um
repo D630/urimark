@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.1.1.7" ; }
+__um_version() { echo "0.1.1.8" ; }
 
 __um_usage()
 {
@@ -183,17 +183,17 @@ __um_search()
                             { [[ $j =~ ^[[:digit:]]*$ ]] && utc+=( $j ) ; } || utc+=( $(date --utc --date "$j" +%s) )
                         done
 
-                        if (( ${#utc[@]} == 1 ))
+                        if ((${#utc[@]} == 1))
                         then
+                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
+                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+
                             while IFS='|' read -r uuid id _
                             do
                                 search["${operator} ${uuid//\"/} ${id//\"/}"]=1
                             done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$")
                         elif (( ${#utc[@]} == 2 )) # ü
                         then
-                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
                             pattern1=$(__um_search_binary ${utc[0]} 1 4)
                             pattern2=$(__um_search_binary ${utc[1]} 2 4)
 
@@ -211,7 +211,7 @@ __um_search()
                             { [[ $j =~ ^[[:digit:]]*$ ]] && utc+=( $j ) ; } || utc+=( $(date --utc --date "$j" +%s) )
                         done
 
-                        if (( ${#utc[@]} == 1 ))
+                        if ((${#utc[@]} == 1))
                         then
                             { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
                             { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
@@ -303,26 +303,26 @@ __um_search()
                             do
                                 { [[ $id =~ ^\^ ]] && id=${id#^} ; } || id=${id/#/.\*}
                                 { [[ $id =~ \$$ ]] && id=${id/%$/} ; } || id=${id/%/.\*}
-                                ids+=( $id )
+                                ids+=($id)
                             done
 
                             while :
                             do
-                                if (__um_search id=^${ids[0]}$ 2>/dev/null )
+                                if (__um_search id=^${ids[0]}$ 2>/dev/null)
                                 then
                                     break
                                 else
-                                    ids[0]=$(( ${ids[0]}+1 ))
+                                    ids[0]=$((${ids[0]} + 1))
                                 fi
                             done
 
                             while :
                             do
-                                if (__um_search id=^${ids[1]}$ 2>/dev/null )
+                                if (__um_search id=^${ids[1]}$ 2>/dev/null)
                                 then
                                     break
                                 else
-                                    ids[1]=$(( ${ids[1]}-1 ))
+                                    ids[1]=$((${ids[1]} - 1))
                                 fi
                             done
 
@@ -336,7 +336,7 @@ __um_search()
                             do
                                 { [[ $id =~ ^\^ ]] && id=${id#^} ; } || id=${id/#/.\*}
                                 { [[ $id =~ \$$ ]] && id=${id/%$/} ; } || id=${id/%/.\*}
-                                ids+=( $id )
+                                ids+=($id)
                             done
                             printf -v pattern '%s|' ${ids[*]}
                             pattern=${pattern%|}
@@ -389,34 +389,34 @@ __um_search_binary()
     declare -a array=()
 
     pattern=$1
-    if (( $2 == 1 ))
+    if (($2 == 1))
     then
         b=1
     else
         e=1
     fi
-    array=( $(find -H "${datadir}" -type f -name _index -print0 | xargs --null cut -d '|' -f"${3}" | tr -d '"' | sort -n) )
+    array=($(find -H "${datadir}" -type f -name _index -print0 | xargs --null cut -d '|' -f"${3}" | tr -d '"' | sort -n))
     begin=0
-    end=$(( ${#array[@]}-1 ))
+    end=$((${#array[@]} - 1))
 
-    while (( begin <= end ))
+    while ((begin <= end))
     do
-        middle=$(( begin+(end-begin)/2 ))
-        if (( ${array[middle]} >= pattern ))
+        middle=$((begin + (end-begin) / 2))
+        if ((${array[middle]} >= pattern))
         then
-            if (( e && ${array[middle+1]:-${array[middle]}} <= pattern ))
+            if ((e && ${array[middle+1]:-${array[middle]}} <= pattern))
             then
                 break
             else
-                end=$(( middle-1 ))
+                end=$((middle - 1))
             fi
-        elif (( ${array[middle]} <= pattern ))
+        elif ((${array[middle]} <= pattern))
         then
-            if (( b && ${array[middle+1]:-${array[middle]}} >= pattern ))
+            if ((b && ${array[middle+1]:-${array[middle]}} >= pattern))
             then
                 break
             else
-                begin=$(( middle+1 ))
+                begin=$((middle + 1))
             fi
         fi
     done
@@ -445,7 +445,12 @@ __um_search_post()
             for key in "${!search[@]}"
             do
                 [[ $key =~ ^and* ]] && continue
-                [[ ${search[$key]} == ${search[${key/or/and}]} ]] && unset -v "search[${key/or/and}]" || unset -v "search[$key]"
+                if [[ ${search[$key]} == ${search[${key/or/and}]} ]]
+                then
+                    unset -v "search[${key/or/and}]"
+                else
+                    unset -v "search[$key]"
+                fi
             done
         }
 
@@ -596,7 +601,6 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
 
 __um_add()
 {
-    echo $@
     declare \
             aid= \
             authority= \
