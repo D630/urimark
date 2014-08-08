@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.0.0" ; }
+__um_version() { echo "0.2.1.0" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-t|-v)' ; }
 
@@ -123,263 +123,362 @@ ARGUMENTS
 
 __um_search()
 {
-    declare -gA \
-                search \
-                operators
-
     declare \
-            f= \
-            file= \
-            i= \
-            id= \
-            j= \
-            operator= \
-            pattern= \
-            pattern1= \
-            pattern2= \
-            search_uri_authority= \
-            search_uri_schemes= \
-            search_uri_schemes_specific_parts= \
-            uuid= \
-            val= \
-            var=
+        f= \
+        i= \
+        id= \
+        j= \
+        not= \
+        operator= \
+        pattern= \
+        pattern1= \
+        pattern2= \
+        search_uri_authority= \
+        search_uri_schemes= \
+        search_uri_schemes_specific_parts= \
+        val= \
+        var=
 
     declare -a \
-                ids=() \
-                utc=()
+        ids=() \
+        utc=()
+
+    declare -gA operators
+
+    __um_search_parse_val()
+    {
+        if [[ $val =~ ^\^ ]]
+        then
+            pattern=${val#^}
+        else
+            pattern=${val/#/.\*}
+        fi
+
+        if [[ $pattern =~ \$$ ]]
+        then
+            pattern=${pattern/%$/}
+        else
+            pattern=${pattern/%/.\*}
+        fi
+    }
 
     if (($# == 0))
     then
-        operator=or
-        operators[$operator]=1
-        while IFS= read -d '' -r file
-        do
-            f=${file%/*}
-            search["${operator} ${f##*/} ${file##*/}"]=1
-        done < <(find -H "${datadir}" -mindepth 2 -type f ! -name _index -print0)
+        operators[or]=1
+        find -H "${datadir}" -mindepth 2 -type f ! -name _index \
+                -printf '%P\n' | \
+            tr '/' ' ' \
+            >> "${tmpdir}/or1"
     else
         for i
         do
             read -r var val <<< "${i/=/ }"
-            [[ $var =~ ^(and|not|or)$ ]] && operator=$var && continue
-            operator=${operator:-or}
-            operators[$operator]=1
-            case $var in
-                uuid)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS= read -d '' -r file
-                        do
-                            f=${file%/*}
-                            search["${operator} ${f##*/} ${file##*/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f ! -name _index -regextype posix-egrep -regex "^${datadir}/${pattern}/.*$" -print0)
-                        ;;
-                authority)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$")
-                        ;;
-                md)
-                        for j in ${val//,/ }
-                        do
-                            { [[ $j =~ ^[[:digit:]]*$ ]] && utc+=( $j ) ; } || utc+=( $(date --utc --date "$j" +%s) )
-                        done
-
-                        if ((${#utc[@]} == 1))
-                        then
-                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                            while IFS='|' read -r uuid id _
+            if [[ $var == and ]]
+            then
+                operator=and
+                operators[and]=$((${operators[and]} + 1))
+            elif [[ $var == not ]]
+            then
+                if [[ $1 == not ]]
+                then
+                    shift 1
+                    operator=or
+                    not=not
+                else
+                    operator=not
+                fi
+            elif [[ $var == or ]]
+            then
+                operator=or
+            else
+                operator=${operator:-or}
+                operators[$operator]=${operators[$operator]:-1}
+                case $var
+                in
+                    uuid)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    ! -name _index -regextype posix-egrep \
+                                    ${not:+\!} -regex "^${datadir}/${pattern}/.*$" \
+                                    -printf '%P\n' | \
+                                tr '/' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    authority)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    md)
+                            for j in ${val//,/ }
                             do
-                                search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                            done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$")
-                        elif (( ${#utc[@]} == 2 )) # ü
-                        then
-                            pattern1=$(__um_search_binary ${utc[0]} 1 4)
-                            pattern2=$(__um_search_binary ${utc[1]} 2 4)
-
-                            while IFS='|' read -r uuid id _
-                            do
-                                search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                            done < <(find -H "${datadir}" -type f -name _index -print0 | xargs -r --null cut -d '|' -f1,2,4 | sort -n | sed -n -e "/|\"${pattern1}\"$/,/|\"${pattern2}\"$/ p" -e "/|\"${pattern2}\"$/ p")
-                        fi
-
-                        unset -v utc
-                        ;;
-                bd)
-                        for j in ${val//,/ }
-                        do
-                            { [[ $j =~ ^[[:digit:]]*$ ]] && utc+=( $j ) ; } || utc+=( $(date --utc --date "$j" +%s) )
-                        done
-
-                        if ((${#utc[@]} == 1))
-                        then
-                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                            while IFS='|' read -r uuid id _
-                            do
-                                search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                            done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$")
-                        elif (( ${#utc[@]} == 2 )) #ü
-                        then
-                            pattern1=$(__um_search_binary ${utc[0]} 1 3)
-                            pattern2=$(__um_search_binary ${utc[1]} 2 3)
-
-                            while IFS='|' read -r uuid id _
-                            do
-                                search["${operator} ${uuid} ${id}"]=1
-                            done < <(find -H "${datadir}" -type f -name _index -print0 | xargs --null cut -d '|' -f1,2,3 | sort -n | sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" -e "/|${pattern2}$/ p")
-                        fi
-
-                        unset -v utc
-                        ;;
-                scheme)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$")
-                        ;;
-                part)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$")
-                        ;;
-                description)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$")
-                        ;;
-                name)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$")
-                        ;;
-                hierarchy)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$")
-                        ;;
-                tag)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$")
-                        ;;
-                reference)
-                        { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                        { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$")
-                        ;;
-                id)
-                        if [[ $val =~ - ]]
-                        then
-                            for id in ${val//-/ }
-                            do
-                                { [[ $id =~ ^\^ ]] && id=${id#^} ; } || id=${id/#/.\*}
-                                { [[ $id =~ \$$ ]] && id=${id/%$/} ; } || id=${id/%/.\*}
-                                ids+=($id)
-                            done
-
-                            while :
-                            do
-                                if (__um_search id=^${ids[0]}$ 2>/dev/null)
+                                if [[ $j =~ ^[[:digit:]]*$ ]]
                                 then
-                                    break
+                                    utc+=($j)
                                 else
-                                    ids[0]=$((${ids[0]} + 1))
+                                    utc+=($(date --utc --date "$j" +%s))
                                 fi
                             done
 
-                            while :
+                            if ((${#utc[@]} == 1))
+                            then
+                                __um_search_parse_val
+                                find -H "${datadir}" -mindepth 2 -type f \
+                                        -name _index -print | \
+                                    xargs -r egrep ${not:+-v} -h -e \
+                                        "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$" | \
+                                    cut -d '|' -f1,2 | \
+                                    tr -d '"' | \
+                                    tr '|' ' ' \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            elif (( ${#utc[@]} == 2 )) # ü
+                            then
+                                pattern1=$(__um_search_binary ${utc[0]} 1 4)
+                                pattern2=$(__um_search_binary ${utc[1]} 2 4)
+
+                                find -H "${datadir}" -type f -name _index -print | \
+                                    xargs -r cut -d '|' -f1,2,4 | \
+                                    tr -d '"' | \
+                                    sort -t '|' -k3 -n | \
+                                    sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" \
+                                        -e "/|${pattern2}$/ p" | \
+                                    tr '|' ' ' \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            fi
+                            ;;
+                    bd)
+                            for j in ${val//,/ }
                             do
-                                if (__um_search id=^${ids[1]}$ 2>/dev/null)
+                                if [[ $j =~ ^[[:digit:]]*$ ]]
                                 then
-                                    break
+                                    utc+=($j)
                                 else
-                                    ids[1]=$((${ids[1]} - 1))
+                                    utc+=($(date --utc --date "$j" +%s))
                                 fi
                             done
 
-                            while IFS='|' read -r uuid id
-                            do
-                                search["${operator} $uuid $id"]=1
-                            done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null cut -d '|' -f1,2 | tr -d '"' | sort -t '|' -k2 -n | sed -n -e "/^.*|${ids[0]}$/,/^.*|${ids[1]}$/ p")
-                        elif [[ $val =~ , ]]
-                        then
-                            for id in ${val//,/ }
-                            do
-                                { [[ $id =~ ^\^ ]] && id=${id#^} ; } || id=${id/#/.\*}
-                                { [[ $id =~ \$$ ]] && id=${id/%$/} ; } || id=${id/%/.\*}
-                                ids+=($id)
-                            done
-                            printf -v pattern '%s|' ${ids[*]}
-                            pattern=${pattern%|}
+                            if ((${#utc[@]} == 1))
+                            then
+                                __um_search_parse_val
+                                find -H "${datadir}" -mindepth 2 -type f \
+                                        -name _index -print | \
+                                    xargs -r egrep ${not:+-v} -h \
+                                        -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$" | \
+                                    cut -d '|' -f1,2 | \
+                                    tr -d '"' | \
+                                    tr '|' ' ' \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            elif (( ${#utc[@]} == 2 )) #ü
+                            then
+                                pattern1=$(__um_search_binary ${utc[0]} 1 3)
+                                pattern2=$(__um_search_binary ${utc[1]} 2 3)
 
-                            while IFS= read -d '' -r file
-                            do
-                                f=${file%/*}
-                                search["${operator} ${f##*/} ${file##*/}"]=1
-                            done < <(find -H "${datadir}" -mindepth 2 -type f ! -name _index -regextype posix-egrep -regex "^${datadir}/.*/(${pattern})" -print0)
-                        else
-                            { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-                            { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
+                                find -H "${datadir}" -type f -name _index -print | \
+                                    xargs -r cut -d '|' -f1,2,3 | \
+                                    tr -d '"' | \
+                                    sort -t '|' -k3 -n | \
+                                    sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" \
+                                        -e "/|${pattern2}$/ p" | \
+                                    tr '|' ' ' \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            fi
+                            ;;
+                    scheme)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    part)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    description)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    name)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    hierarchy)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    tag)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    reference)
+                            __um_search_parse_val
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                    id)
+                            if [[ $val =~ - ]]
+                            then
+                                for id in ${val//-/ }
+                                do
+                                    if [[ $id =~ ^\^ ]]
+                                    then
+                                        id=${id#^}
+                                    else
+                                        id=${id/#/.\*}
+                                    fi
+                                    if [[ $id =~ \$$ ]]
+                                    then
+                                        id=${id/%$/}
+                                    else
+                                        id=${id/%/.\*}
+                                    fi
+                                    ids+=($id)
+                                done
 
-                            while IFS= read -d '' -r file
-                            do
-                                f=${file%/*}
-                                search["${operator} ${f##*/} ${file##*/}"]=1
-                            done < <(find -H "${datadir}" -mindepth 2 -type f ! -name _index -regextype posix-egrep -regex "^${datadir}/.*/${pattern}" -print0)
-                        fi
+                                while :
+                                do
+                                    if (tmpdir=${tmpdir}_ __um_search \
+                                        id=^${ids[0]}$ 1>/dev/null 2>&1)
+                                    then
+                                        break
+                                    else
+                                        ids[0]=$((${ids[0]} + 1))
+                                    fi
+                                done
 
-                        unset -v ids
-                        ;;
-                uri)
-                        search_uri_schemes=${val%%:*}
-                        IFS='/' read -r search_uri_authority search_uri_schemes_specific_parts <<< "${val##*://}"
-                        search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
+                                while :
+                                do
+                                    if (tmpdir=${tmpdir}_ __um_search \
+                                        id=^${ids[1]}$ 1>/dev/null 2>&1)
+                                    then
+                                        break
+                                    else
+                                        ids[1]=$((${ids[1]} - 1))
+                                    fi
+                                done
 
-                        while IFS='|' read -r uuid id _
-                        do
-                            search["${operator} ${uuid//\"/} ${id//\"/}"]=1
-                        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$")
-                        ;;
-            esac
+                                find -H "${datadir}" -mindepth 2 -type f \
+                                        -name _index -print | \
+                                    xargs -r cut -d '|' -f1,2 | \
+                                    tr -d '"' | \
+                                    tr '|' ' ' | \
+                                    sort -k2 -n | \
+                                    sed -n \
+                                        -e "/^.* ${ids[0]}$/,/^.* ${ids[1]}$/${not:+!}p" \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            elif [[ $val =~ , ]]
+                            then
+                                for id in ${val//,/ }
+                                do
+                                    if [[ $id =~ ^\^ ]]
+                                    then
+                                        id=${id#^}
+                                    else
+                                        id=${id/#/.\*}
+                                    fi
+
+                                    if [[ $id =~ \$$ ]]
+                                    then
+                                        id=${id/%$/}
+                                    else
+                                        id=${id/%/.\*}
+                                    fi
+                                    ids+=($id)
+                                done
+                                printf -v pattern '%s|' ${ids[*]}
+                                pattern=${pattern%|}
+
+                                find -H "${datadir}" -mindepth 2 -type f \
+                                        ! -name _index -regextype posix-egrep \
+                                        ${not:+\!} -regex "^${datadir}/.*/(${pattern})" \
+                                        -printf '%P\n' | \
+                                    tr '/' ' ' \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            else
+                                __um_search_parse_val
+                                find -H "${datadir}" -mindepth 2 -type f \
+                                        ! -name _index -regextype posix-egrep \
+                                        ${not:+\!} \
+                                        -regex "^${datadir}/.*/${pattern}" \
+                                        -printf '%P\n' | \
+                                    tr '/' ' ' \
+                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                            fi
+                            ;;
+                    uri)
+                            search_uri_schemes=${val%%:*}
+                            IFS='/' read -r search_uri_authority \
+                                search_uri_schemes_specific_parts \
+                                <<< "${val##*://}"
+                            search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
+
+                            find -H "${datadir}" -mindepth 2 -type f \
+                                    -name _index -print | \
+                                xargs -r --null egrep ${not:+-v} -h \
+                                    -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" | \
+                                cut -d '|' -f1,2 | \
+                                tr -d '"' | \
+                                tr '|' ' ' \
+                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                            ;;
+                esac
+                ids=()
+                utc=()
+                not=
+            fi
         done
     fi
-
-    ((${#search[@]} > 0)) || { echo "Search: No matching." 1>&2 ; return 1 ; }
 }
 
 __um_search_binary()
@@ -401,7 +500,10 @@ __um_search_binary()
     else
         e=1
     fi
-    array=($(find -H "${datadir}" -type f -name _index -print0 | xargs --null cut -d '|' -f"${3}" | tr -d '"' | sort -n))
+    array=($(find -H "${datadir}" -type f -name _index -print0 | \
+        xargs --null cut -d '|' -f"${3}" | \
+        tr -d '"' | \
+        sort -n))
     begin=0
     end=$((${#array[@]} - 1))
 
@@ -432,88 +534,54 @@ __um_search_binary()
 
 __um_search_post()
 {
-    declare key=
-
-    if [[ ( ${operators[or]} && ${operators[not]} ) || ${operators[or]} ]]
+    if [[ ${operators[and]} -eq 1 ]]
     then
-        for key in "${!search[@]}"
-        do
-            [[ $key =~ (^not*|^and*) ]] && continue
-            [[ ${search[$key]} = ${search[${key/or/not}]} ]] &&
-            {
-                unset -v "search[$key]"
-                unset -v "search[${key/or/not}]"
-            }
-        done
-
-        [[ ${operators[and]} ]] &&
+        __um_search_post_and() { sort "${tmpdir}/and1" | uniq ; }
+    elif [[ ${operators[and]} -gt 1 ]]
+    then
+        __um_search_post_and()
         {
-            for key in "${!search[@]}"
-            do
-                [[ $key =~ ^and* ]] && continue
-                if [[ ${search[$key]} == ${search[${key/or/and}]} ]]
-                then
-                    unset -v "search[${key/or/and}]"
-                else
-                    unset -v "search[$key]"
-                fi
-            done
+            diff --unchanged-group-format='%=' \
+                    --old-group-format='' --new-group-format='' \
+                    --changed-group-format='' --from-file ${tmpdir}/and* | \
+                sort | \
+                uniq
         }
-
-        for key in "${!search[@]}"
-        do
-            [[ ! $key =~ ^and* ]] && search[${key/or /}]=1
-            unset -v "search[$key]"
-        done
-    elif [[ ${operators[not]} ]]
-    then
-        for key in "${!search[@]}"
-        do
-            [[ $key =~ ^not* ]] &&
-            {
-                keyy=${key/not /}
-                search[${keyy% *}]=1
-            }
-            unset -v "search[$key]"
-        done
-
-        __um_search_negativ
-
-        for key in "${!search[@]}"
-        do
-            [[ $key =~ [[:blank:]] ]] || unset -v "search[$key]"
-        done
     fi
 
-    if [[ $path_absolute ]]
+    if [[ ${operators[or]} && ${operators[and]} ]]
     then
-        for key in "${!search[@]}"
-        do
-            printf "${datadir}/%s\n" "${key% *}/${key#* }"
-        done
+        __um_search_post_or()
+        {
+            comm -12 <(sort "${tmpdir}/or1") <(__um_search_post_and) | \
+            sort | \
+            uniq
+        }
+    elif ((${operators[or]}))
+    then
+        __um_search_post_or() { sort "${tmpdir}/or1" | uniq ; }
+    fi
+
+    if [[ ${operators[or]} && ${operators[not]} ]]
+    then
+        if [[ $path_absolute ]]
+        then
+            sed -n "s|^\(.*\) \(.*\)$|${datadir}\/\1\/\2|p" \
+                <(comm -23 <(__um_search_post_or) \
+                <(sort "${tmpdir}/not1" | uniq))
+        else
+            comm -23 <(__um_search_post_or) \
+                <(sort "${tmpdir}/not1" | uniq)
+        fi
     else
-        for key in "${!search[@]}"
-        do
-            printf '%s\n' "$key"
-        done
+        if [[ $path_absolute ]]
+        then
+            sed -n "s|^\(.*\) \(.*\)$|${datadir}\/\1\/\2|p" \
+                <(__um_search_post_or)
+        else
+            __um_search_post_or
+        fi
     fi
-}
-
-__um_search_negativ()
-{
-    declare \
-            f= \
-            file= \
-            pattern=
-
-    pattern=${!search[*]}
-    pattern=${pattern// / ! -name }
-
-    while IFS= read -d '' -r file
-    do
-        f=${file%/*}
-        search["${f##*/} ${file##*/}"]=1
-    done < <(find -H "${datadir}" -mindepth 2 -type f ! -name ${pattern} -print0)
 }
 
 __um_edit()
@@ -1442,7 +1510,7 @@ __um_main()
                 ;;
         search)
                 __um_search "${patterns[@]}" && __um_search_post
-                unset -v search operators path_absolute
+                unset -v operators path_absolute
                 ;;
         tags)
                 __um_tags "${patterns[@]}"
@@ -1458,9 +1526,13 @@ __um_main()
 declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
 declare -r datadir=${URIMARK_DATA:-${predir_datadir}/urimark}
 declare -r \
-           CDPATH=$datadir \
-           editor=${X_TTY_EDITOR:-nano}
+    CDPATH=$datadir \
+    editor=${X_TTY_EDITOR:-nano}
+declare tmpdir=${URIMARK_TMP:-"${TMPDIR:-/tmp}/urimark"}
+
+trap "{ rm -fr "$tmpdir" "${tmpdir}_" ; exit 255 ; }" EXIT
 
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
+mkdir -p -- "$tmpdir" "${tmpdir}_"
 
 __um_main "$@"
