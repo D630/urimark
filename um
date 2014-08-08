@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.2.0" ; }
+__um_version() { echo "0.2.3.0" ; }
 
-__um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
+__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
 
 __um_help()
 {
@@ -49,7 +49,6 @@ SUBCOMMANDS
     -c, --cloud=<CFIELD>
     -d, --delete                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
                                 -o,-S,-T,-Y
-    -D, --dep=<DFIELD>          -E,-f,-u
     -e, --edit                  <EEXP>
     -h, --help
     -i, --info
@@ -77,8 +76,6 @@ SUBCOMMANDS
     -9, --mod
     -a, --and
     -B, --bd=                   <BD>
-    -E, --specific-tree
-    -f, --follow-node
     -H, --hierarchy=            <HIER>
     -I, --id=                   <ID>
     -M, --md=                   <MD>
@@ -99,8 +96,6 @@ ARGUMENTS
     <CFIELD>                    'scheme', 'authority', 'part',
                                 'hierarchy', 'tag' or 'reference'
     <DESC>*                     'string'
-    <DFIELD>*                   id or reference number specified by
-                                an integer (only one value; no range)
     <EEXP>*                     <UUID> or <ID>
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi)
@@ -1023,157 +1018,6 @@ __um_cloud()
     find -H "$datadir" -mindepth 2 -type f -name _index -print | xargs -r cut -d'|' -f "$field" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
 }
 
-__um_dependency_search()
-{
-    declare \
-            id= \
-            pattern= \
-            ref= \
-            val=$1
-
-    { [[ $val =~ ^\^ ]] && pattern=${val#^} ; } || pattern=${val/#/.\*}
-    { [[ $pattern =~ \$$ ]] && pattern=${pattern/%$/} ; } || pattern=${pattern/%/.\*}
-
-    if [[ $search_specific_tree ]]
-    then
-        while IFS='|' read -r _ id _ _ _ _ _ _ _ _ _ ref
-        do
-            id=${id//\"/}
-            ref=${ref//\"/}
-            printf '%s %s\n' "$id" "$ref"
-            dependencies[$id]=$ref
-            [[ $follow_note ]] &&
-            {
-                for i in ${ref//;/ }
-                do
-                    [[ ! ${dependencies[$i]} ]] && __um_dependency_search "^${i}$" && break
-                done
-            }
-        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$")
-    else
-        while IFS='|' read -r _ id _ _ _ _ _ _ _ _ _ ref
-        do
-            printf '%s %s\n' "${id//\"/}" "${ref//\"/}"
-        done < <(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null egrep -h -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$")
-    fi
-}
-
-__um_dependency_do()
-{
-    declare -A \
-               deps \
-               children
-
-    declare -a \
-               ch=() \
-               new_children=() \
-               tsorted=()
-
-    declare \
-            c= \
-            child= \
-            i= \
-            ind= \
-            indd= \
-            j= \
-            k= \
-            l= \
-            m= \
-            n= \
-            parent= \
-            skip=
-
-    while read -r parent child
-    do
-        [[ $child ]] &&
-        {
-            ch=()
-            for c in ${child//;/ }
-            do
-                if [[ ${deps[${c} ${parent}]} ]]
-                then
-                    continue
-                else
-                    deps[${parent} ${c}]=${c}
-                    ch+=($c)
-                fi
-            done
-            children[$parent]=${ch[@]}
-            parent=
-            child=
-        }
-    done
-
-    [[ ! ${deps[@]} ]] && { echo "Dependency: No matching." 1>&2 ; return 1 ; }
-
-    mapfile -t tsorted < <(printf '%s\n' "${!deps[@]}" | tsort 2>/dev/null)
-
-    for ((i=${#tsorted[@]}-1 ; i >= 0 ; --i))
-    do
-        [[ ${children[${tsorted[$i]}]} ]] &&
-        {
-            new_children=()
-            for j in ${children[${tsorted[$i]}]}
-            do
-                if [[ ${children[$j]} ]]
-                then
-                    new_children+=(${j}_${children[$j]// /_})
-                else
-                    new_children+=(${j})
-                fi
-            done
-            children[${tsorted[$i]}]=${new_children[@]}
-        }
-    done
-
-    ind=$(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n '$=')
-    ind=${#ind}
-
-    for k in "${tsorted[@]}"
-    do
-        skip=
-        for l in ${children[@]//_/ }
-        do
-            (($k == $l)) && skip=skip && break
-        done
-        [[ ! $skip ]] &&
-        {
-            if [[ $print_desc ]]
-            then
-                printf '%d %s\n' "$k" "$(__um_main list -u id=^${k}$ | cut -d '|' -f5)"
-                for m in ${children[$k]}
-                do
-                    indd=$ind
-                    if [[ $m =~ _ ]]
-                    then
-                        for n in ${m//_/ }
-                        do
-                            printf '%*d %s\n' "$((indd+=4))" "$n" "$(__um_main list -u id=^${n}$ | cut -d '|' -f5)"
-                        done
-                    else
-                        printf '%*d %s\n' "$((indd+4))" "$m" "$(__um_main list -u id=^${m}$ | cut -d '|' -f5)"
-                    fi
-                done
-            else
-                printf '%d\n' "$k"
-                for m in ${children[$k]}
-                do
-                    indd=$ind
-                    if [[ $m =~ _ ]]
-                    then
-                        for n in ${m//_/ }
-                        do
-                            printf '%*d\n' "$((indd+=4))" "$n"
-                        done
-                    else
-                        printf '%*d\n' "$((indd+4))" "$m"
-                    fi
-                done
-            fi
-        }
-    done
-}
-
 __um_info()
 {
     printf '%s\n' "Authorities: $(find -H "${datadir}" -maxdepth 1 -mindepth 1 -type d ! -name _index | wc -l)" "URIs: $(find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r sed -n '$=')"
@@ -1332,10 +1176,8 @@ __um_main()
             bd=*)               args="${args}-B ${arg#*=} "                     ;;
             cloud=*)            args="${args}-c ${arg#*=} "                     ;;
             delete)             args="${args}-d "                               ;;
-            dep=*)              args="${args}-D ${arg#*=} "                     ;;
             description=*)      args="${args}-8 ${delim}${arg#*=}${delim} "     ;;
             edit)               args="${args}-e "                               ;;
-            follow-node)        args="${args}-f "                               ;;
             help)               args="${args}-h "                               ;;
             hierarchy=*)        args="${args}-H ${arg#*=} "                     ;;
             id=*)               args="${args}-I ${arg#*=} "                     ;;
@@ -1356,7 +1198,6 @@ __um_main()
             reference-=*)       args="${args}-7 ${delim}${arg#*-=}${delim} "    ;;
             scheme=*)           args="${args}-S ${arg#*=} "                     ;;
             search)             args="${args}-s "                               ;;
-            specific-tree)      args="${args}-E "                               ;;
             tag=*)              args="${args}-2 ${delim}${arg#*=}${delim} "     ;;
             tag+=*)             args="${args}-3 ${delim}${arg#*+=}${delim} "    ;;
             tag-=*)             args="${args}-4 ${delim}${arg#*-=}${delim} "    ;;
@@ -1376,24 +1217,19 @@ __um_main()
     declare \
             action= \
             build_uri= \
-            follow_note= \
             i= \
             mod= \
             non_interactive= \
             opt= \
             OPTIND=1 \
-            path_absolute= \
-            print_desc= \
-            search_specific_tree=
+            path_absolute=
 
     declare -ga \
                 mods=() \
                 patterns=()
 
-    declare -gA dependencies
-
     eval set -- "$args"
-    while getopts :sPAaY:B:c:dD:8:efH:I:ilM:9mN:n!oT:ur5:6:7:S:E2:3:4:0:1:hv opt
+    while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:ur5:6:7:S:2:3:4:0:1:hv opt
     do
         case $opt in
                 0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1411,10 +1247,7 @@ __um_main()
                 B)  __um_check_args "bd=$OPTARG"                      ;;
                 c)  action=cloud ; __um_check_args "$OPTARG"          ;;
                 d)  action=delete                                     ;;
-                D)  action=dep ; __um_check_args "$OPTARG"            ;;
                 e)  action=edit                                       ;;
-                E)  search_specific_tree=search_specific_tree         ;;
-                f)  follow_note=follow_note                           ;;
                 h)  action=help                                       ;;
                 H)  __um_check_args "hierarchy=$OPTARG"               ;;
                 i)  action=info                                       ;;
@@ -1431,7 +1264,7 @@ __um_main()
                 s)  action=search                                     ;;
                 S)  __um_check_args "scheme=$OPTARG"                  ;;
                 T)  __um_check_args "part=$OPTARG"                    ;;
-                u)  build_uri=build_uri ; print_desc=print_desc       ;;
+                u)  build_uri=build_uri                               ;;
                 v)  action=version                                    ;;
                 Y)  __um_check_args "authority=$OPTARG"               ;;
                 \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
@@ -1451,10 +1284,6 @@ __um_main()
         delete)#
                 __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; echo "Done." >&2 ; }
                 unset -v dir_stack non_interactive
-                ;;
-        dep)#
-                __um_dependency_search "${patterns[0]}" | __um_dependency_do
-                unset -v dependencies search_specific_tree print_desc follow_note
                 ;;
         edit)#
                 __um_edit "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
