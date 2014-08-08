@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.1.0" ; }
+__um_version() { echo "0.2.1.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-t|-v)' ; }
 
@@ -995,17 +995,16 @@ __um_list()
     then
         if [[ $build_uri ]]
         then
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
+            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
         else
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n 'p'
+            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r cat
         fi
     else
-        mapfile -t < <(__um_main search "$@")
         if [[ $build_uri ]]
         then
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null fgrep -h -f <(printf '"%s"\n' ${MAPFILE[@]// /\"|\"}) | sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
+            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r fgrep -h -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') | sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
         else
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null fgrep -h -f <(printf '"%s"\n' ${MAPFILE[@]// /\"|\"})
+            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r fgrep -h -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/')
         fi
     fi
 }
