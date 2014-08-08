@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.1.1" ; }
+__um_version() { echo "0.2.1.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-D|-e|-h|-i|-l|-m|-r|-s|-t|-v)' ; }
 
@@ -1197,7 +1197,7 @@ __um_tags()
 
 __um_info()
 {
-    printf '%s\n' "Authorities: $(find -H "${datadir}" -maxdepth 1 -type d ! -name _index ! -name urimark | wc -l)" "URIs: $(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs -r --null sed -n '$=')"
+    printf '%s\n' "Authorities: $(find -H "${datadir}" -maxdepth 1 -mindepth 1 -type d ! -name _index | wc -l)" "URIs: $(find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r sed -n '$=')"
 }
 
 __um_rebuild()
@@ -1467,34 +1467,34 @@ __um_main()
     shift $((OPTIND-1))
 
     case $action in
-        add)
+        add)#
                 __um_add "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
                 unset -v dir_stack
                 ;;
-        cloud)
+        cloud)#
                 __um_cloud "${patterns[0]}"
                 ;;
-        delete)
+        delete)#
                 __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; echo "Done." >&2 ; }
                 unset -v dir_stack non_interactive
                 ;;
-        dep)
+        dep)#
                 __um_dependency_search "${patterns[0]}" | __um_dependency_do
                 unset -v dependencies search_specific_tree print_desc follow_note
                 ;;
-        edit)
+        edit)#
                 __um_edit "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
                 unset -v dir_stack
                 ;;
         help)
                 __um_help ;;
-        info)
+        info)#
                 __um_info ;;
         list)
                 __um_list "${patterns[@]}"
                 unset -v build_uri
                 ;;
-        modify)
+        modify)#
                 for i in "${!patterns[@]}"
                 do
                     [[ ${patterns[$i]} == mod ]] && mod=mod && unset -v "patterns[$i]" && continue
@@ -1503,7 +1503,7 @@ __um_main()
                 __um_modify && __um_rebuild_index && echo "Done." 1>&2
                 unset -v dir_stack non_interactive mod mods patterns i
                 ;;
-        rebuild)
+        rebuild)#
                 __um_rebuild "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
                 unset -v dir_stack
                 ;;
@@ -1511,7 +1511,7 @@ __um_main()
                 __um_search "${patterns[@]}" && __um_search_post
                 unset -v operators path_absolute
                 ;;
-        tags)
+        tags)#
                 __um_tags "${patterns[@]}"
                 unset -v print_tags
                 ;;
