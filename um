@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.5.5" ; }
+__um_version() { echo "0.2.5.6" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -662,8 +662,8 @@ __um_add()
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid < <(tmpdir=${tmpdir}_ ; __um_search authority=^${authority}$ 2>/dev/null && \
-        __um_search_post 2>/dev/null)
+    read -r auuid aid < <(__um_search authority=^${authority}$ && \
+        __um_search_post)
     if [[ $auuid && $aid ]]
     then
         uuid=$auuid
