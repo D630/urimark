@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.5.4" ; }
+__um_version() { echo "0.2.5.5" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1127,183 +1127,6 @@ __um_check_args()
     fi
 }
 
-__um_main()
-{
-    declare \
-            arg= \
-            args= \
-            delim=\'
-
-    for arg
-    do
-        arg=${arg#--}
-        case $arg in
-            absolute-path)      args="${args}-P "                               ;;
-            add)                args="${args}-A "                               ;;
-            and)                args="${args}-a "                               ;;
-            "")                 args="${args}-- "                               ;;
-            authority=*)        args="${args}-Y ${arg#*=} "                     ;;
-            bd=*)               args="${args}-B ${arg#*=} "                     ;;
-            cloud=*)            args="${args}-c ${arg#*=} "                     ;;
-            delete)             args="${args}-d "                               ;;
-            description=*)      args="${args}-8 ${delim}${arg#*=}${delim} "     ;;
-            edit)               args="${args}-e "                               ;;
-            help)               args="${args}-h "                               ;;
-            hierarchy=*)        args="${args}-H ${arg#*=} "                     ;;
-            id=*)               args="${args}-I ${arg#*=} "                     ;;
-            info)               args="${args}-i "                               ;;
-            list)               args="${args}-l "                               ;;
-            md=*)               args="${args}-M ${arg#*=} "                     ;;
-            mod)                args="${args}-9 "                               ;;
-            modify)             args="${args}-m "                               ;;
-            name=*)             args="${args}-N ${delim}${arg#*=}${delim} "     ;;
-            non-interactive)    args="${args}-n "                               ;;
-            not)                args="${args}-! "                               ;;
-            or)                 args="${args}-o "                               ;;
-            part=*)             args="${args}-T ${delim}${arg#*=}${delim} "     ;;
-            print-uri)          args="${args}-u "                               ;;
-            reference=*)        args="${args}-5 ${delim}${arg#*=}${delim} "     ;;
-            reference+=*)       args="${args}-6 ${delim}${arg#*+=}${delim} "    ;;
-            reference-=*)       args="${args}-7 ${delim}${arg#*-=}${delim} "    ;;
-            scheme=*)           args="${args}-S ${arg#*=} "                     ;;
-            search)             args="${args}-s "                               ;;
-            tag=*)              args="${args}-2 ${delim}${arg#*=}${delim} "     ;;
-            tag+=*)             args="${args}-3 ${delim}${arg#*+=}${delim} "    ;;
-            tag-=*)             args="${args}-4 ${delim}${arg#*-=}${delim} "    ;;
-            uri=*)              args="${args}-1 ${delim}${arg#*=}${delim} "     ;;
-            uuid=*)             args="${args}-0 ${arg#*=} "                     ;;
-            version)            args="${args}-v "                               ;;
-            *)                  if [[ ${arg:0:1} == - ]]
-                                then
-                                    args="${args}${arg} "
-                                else
-                                    args="${args}${delim}${arg}${delim} "
-                                fi
-                                ;;
-        esac
-    done
-
-    declare \
-            action= \
-            build_uri= \
-            i= \
-            mod= \
-            non_interactive= \
-            opt= \
-            OPTIND=1 \
-            path_absolute=
-
-    declare -ga \
-                mods=() \
-                patterns=()
-
-    eval set -- "$args"
-    while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
-    do
-        case $opt in
-                0)  __um_check_args "uuid=$OPTARG"                    ;;
-                1)  __um_check_args "uri=$OPTARG"                     ;;
-                2)  __um_check_args "tag=$OPTARG"                     ;;
-                3)  __um_check_args "tag+=$OPTARG"                    ;;
-                4)  __um_check_args "tag-=$OPTARG"                    ;;
-                5)  __um_check_args "reference=$OPTARG"               ;;
-                6)  __um_check_args "reference+=$OPTARG"              ;;
-                7)  __um_check_args "reference-=$OPTARG"              ;;
-                8)  __um_check_args "description=$OPTARG"             ;;
-                9)  patterns+=(mod)                                   ;;
-                A)  action=add                                        ;;
-                a)  patterns+=(and)                                   ;;
-                B)  __um_check_args "bd=$OPTARG"                      ;;
-                c)  action=cloud ; __um_check_args "$OPTARG"          ;;
-                d)  action=delete                                     ;;
-                e)  action=edit                                       ;;
-                h)  action=help                                       ;;
-                H)  __um_check_args "hierarchy=$OPTARG"               ;;
-                i)  action=info                                       ;;
-                I)  __um_check_args "id=$OPTARG"                      ;;
-                l)  action=list                                       ;;
-                m)  action=modify                                     ;;
-                M)  __um_check_args "md=$OPTARG"                      ;;
-                n)  non_interactive=non_interactive                   ;;
-                N)  __um_check_args "name=$OPTARG"                    ;;
-                o)  patterns+=(or)                                    ;;
-                !)  patterns+=(not)                                   ;;
-                P)  path_absolute=path_absolute                       ;;
-                s)  action=search                                     ;;
-                S)  __um_check_args "scheme=$OPTARG"                  ;;
-                T)  __um_check_args "part=$OPTARG"                    ;;
-                u)  build_uri=build_uri                               ;;
-                v)  action=version                                    ;;
-                Y)  __um_check_args "authority=$OPTARG"               ;;
-                :)  printf '%s\n' "Option -${OPTARG} requires an argument." >&2
-                    exit 1                                            ;;
-                \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
-                    exit 1
-        esac
-    done
-    if (($# + 1 != $OPTIND))
-    then
-        { printf '%s\n' "Command line does not fit: $*." 1>&2 ; exit 1 ; }
-    else
-        shift $((OPTIND-1))
-    fi
-
-    case $action in
-        add)
-                __um_add "${patterns[@]}" && __um_rebuild_index
-                unset -v dir_stack
-                ;;
-        cloud)
-                __um_cloud "${patterns[0]}"
-                ;;
-        delete)
-                __um_delete "${patterns[@]}" &&
-                {
-                    __um_delete_empty_dirs
-                    __um_rebuild_index
-                }
-                unset -v dir_stack non_interactive
-                ;;
-        edit)
-                __um_edit "${patterns[@]}"
-                unset -v dir_stack
-                ;;
-        help)
-                __um_help
-                ;;
-        info)
-                __um_info
-                ;;
-        list)
-                __um_list "${patterns[@]}"
-                unset -v build_uri
-                ;;
-        modify)
-                for i in "${!patterns[@]}"
-                do
-                    [[ ${patterns[$i]} == mod ]] && \
-                        mod=mod && \
-                        unset -v "patterns[$i]" && \
-                        continue
-                    [[ $mod == mod ]] && \
-                        mods+=("${patterns[$i]}") && \
-                        unset -v "patterns[$i]"
-                done
-                __um_modify && __um_rebuild_index
-                unset -v dir_stack non_interactive mod mods patterns i
-                ;;
-        search)
-                __um_search "${patterns[@]}" && __um_search_post
-                unset -v operators path_absolute
-                ;;
-        version)
-                __um_version
-                ;;
-        *)
-                { echo "No subcommand has been specified." 1>&2 ; exit 1 ; }
-    esac
-}
-
 # -- MAIN.
 
 declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
@@ -1318,4 +1141,170 @@ trap "{ rm -fr "$tmpdir" "${tmpdir}_" ; exit 255 ; }" EXIT
 [[ ! -e $datadir ]] && mkdir -p -- "$datadir"
 mkdir -p -- "$tmpdir" "${tmpdir}_"
 
-__um_main "$@"
+declare \
+    arg= \
+    args= \
+    delim=\'
+
+for arg
+do
+    arg=${arg#--}
+    case $arg in
+        absolute-path)      args="${args}-P "                               ;;
+        add)                args="${args}-A "                               ;;
+        and)                args="${args}-a "                               ;;
+        "")                 args="${args}-- "                               ;;
+        authority=*)        args="${args}-Y ${arg#*=} "                     ;;
+        bd=*)               args="${args}-B ${arg#*=} "                     ;;
+        cloud=*)            args="${args}-c ${arg#*=} "                     ;;
+        delete)             args="${args}-d "                               ;;
+        description=*)      args="${args}-8 ${delim}${arg#*=}${delim} "     ;;
+        edit)               args="${args}-e "                               ;;
+        help)               args="${args}-h "                               ;;
+        hierarchy=*)        args="${args}-H ${arg#*=} "                     ;;
+        id=*)               args="${args}-I ${arg#*=} "                     ;;
+        info)               args="${args}-i "                               ;;
+        list)               args="${args}-l "                               ;;
+        md=*)               args="${args}-M ${arg#*=} "                     ;;
+        mod)                args="${args}-9 "                               ;;
+        modify)             args="${args}-m "                               ;;
+        name=*)             args="${args}-N ${delim}${arg#*=}${delim} "     ;;
+        non-interactive)    args="${args}-n "                               ;;
+        not)                args="${args}-! "                               ;;
+        or)                 args="${args}-o "                               ;;
+        part=*)             args="${args}-T ${delim}${arg#*=}${delim} "     ;;
+        print-uri)          args="${args}-u "                               ;;
+        reference=*)        args="${args}-5 ${delim}${arg#*=}${delim} "     ;;
+        reference+=*)       args="${args}-6 ${delim}${arg#*+=}${delim} "    ;;
+        reference-=*)       args="${args}-7 ${delim}${arg#*-=}${delim} "    ;;
+        scheme=*)           args="${args}-S ${arg#*=} "                     ;;
+        search)             args="${args}-s "                               ;;
+        tag=*)              args="${args}-2 ${delim}${arg#*=}${delim} "     ;;
+        tag+=*)             args="${args}-3 ${delim}${arg#*+=}${delim} "    ;;
+        tag-=*)             args="${args}-4 ${delim}${arg#*-=}${delim} "    ;;
+        uri=*)              args="${args}-1 ${delim}${arg#*=}${delim} "     ;;
+        uuid=*)             args="${args}-0 ${arg#*=} "                     ;;
+        version)            args="${args}-v "                               ;;
+        *)                  if [[ ${arg:0:1} == - ]]
+                            then
+                                args="${args}${arg} "
+                            else
+                                args="${args}${delim}${arg}${delim} "
+                            fi
+                            ;;
+    esac
+done
+
+declare \
+    action= \
+    build_uri= \
+    i= \
+    mod= \
+    non_interactive= \
+    opt= \
+    OPTIND=1 \
+    path_absolute=
+
+declare -a \
+    mods=() \
+    patterns=()
+
+eval set -- "$args"
+while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
+do
+    case $opt in
+            0)  __um_check_args "uuid=$OPTARG"                    ;;
+            1)  __um_check_args "uri=$OPTARG"                     ;;
+            2)  __um_check_args "tag=$OPTARG"                     ;;
+            3)  __um_check_args "tag+=$OPTARG"                    ;;
+            4)  __um_check_args "tag-=$OPTARG"                    ;;
+            5)  __um_check_args "reference=$OPTARG"               ;;
+            6)  __um_check_args "reference+=$OPTARG"              ;;
+            7)  __um_check_args "reference-=$OPTARG"              ;;
+            8)  __um_check_args "description=$OPTARG"             ;;
+            9)  patterns+=(mod)                                   ;;
+            A)  action=add                                        ;;
+            a)  patterns+=(and)                                   ;;
+            B)  __um_check_args "bd=$OPTARG"                      ;;
+            c)  action=cloud ; __um_check_args "$OPTARG"          ;;
+            d)  action=delete                                     ;;
+            e)  action=edit                                       ;;
+            h)  action=help                                       ;;
+            H)  __um_check_args "hierarchy=$OPTARG"               ;;
+            i)  action=info                                       ;;
+            I)  __um_check_args "id=$OPTARG"                      ;;
+            l)  action=list                                       ;;
+            m)  action=modify                                     ;;
+            M)  __um_check_args "md=$OPTARG"                      ;;
+            n)  non_interactive=non_interactive                   ;;
+            N)  __um_check_args "name=$OPTARG"                    ;;
+            o)  patterns+=(or)                                    ;;
+            !)  patterns+=(not)                                   ;;
+            P)  path_absolute=path_absolute                       ;;
+            s)  action=search                                     ;;
+            S)  __um_check_args "scheme=$OPTARG"                  ;;
+            T)  __um_check_args "part=$OPTARG"                    ;;
+            u)  build_uri=build_uri                               ;;
+            v)  action=version                                    ;;
+            Y)  __um_check_args "authority=$OPTARG"               ;;
+            :)  printf '%s\n' "Option -${OPTARG} requires an argument." >&2
+                exit 1                                            ;;
+            \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
+                exit 1
+    esac
+done
+if (($# + 1 != $OPTIND))
+then
+    { printf '%s\n' "Command line does not fit: $*." 1>&2 ; exit 1 ; }
+else
+    shift $((OPTIND-1))
+fi
+
+case $action in
+    add)
+            __um_add "${patterns[@]}" && __um_rebuild_index
+            ;;
+    cloud)
+            __um_cloud "${patterns[0]}"
+            ;;
+    delete)
+            __um_delete "${patterns[@]}" &&
+            {
+                __um_delete_empty_dirs
+                __um_rebuild_index
+            }
+            ;;
+    edit)
+            __um_edit "${patterns[@]}"
+            ;;
+    help)
+            __um_help
+            ;;
+    info)
+            __um_info
+            ;;
+    list)
+            __um_list "${patterns[@]}"
+            ;;
+    modify)
+            for i in "${!patterns[@]}"
+            do
+                [[ ${patterns[$i]} == mod ]] && \
+                    mod=mod && \
+                    unset -v "patterns[$i]" && \
+                    continue
+                [[ $mod == mod ]] && \
+                    mods+=("${patterns[$i]}") && \
+                    unset -v "patterns[$i]"
+            done
+            __um_modify && __um_rebuild_index
+            ;;
+    search)
+            __um_search "${patterns[@]}" && __um_search_post
+            ;;
+    version)
+            __um_version
+            ;;
+    *)
+            { echo "No subcommand has been specified." 1>&2 ; exit 1 ; }
+esac
