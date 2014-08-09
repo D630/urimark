@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.3.2" ; }
+__um_version() { echo "0.2.3.3" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
 
@@ -1143,7 +1143,15 @@ __um_random()
     printf '%s\n' "${random// /}"
 }
 
-__um_calculating_id() { printf '%s\n' "$(($(find -H "${datadir}" -mindepth 2 -type f -name _index -print0 | xargs --null cut -d "|" -f2 | tr -d '"' | sort -n | tail -n1)+1))" ; }
+__um_calculating_id()
+{
+    printf '%s\n' "$(($(find -H "${datadir}" -mindepth 2 -type f \
+            -name _index -print | \
+        xargs -r cut -d "|" -f2 | \
+        tr -d '"' | \
+        sort -n | \
+        tail -n1)+1))"
+}
 
 __um_delete_empty_dirs() { find -H "${datadir}" -maxdepth 1 -type d -empty -delete ; }
 
