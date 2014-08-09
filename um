@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.4.1" ; }
+__um_version() { echo "0.2.4.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1010,7 +1010,8 @@ __um_cloud()
         reference)  field=12                                          ;;
         scheme)     field=5                                           ;;
         tag)        field=11                                          ;;
-        *)          { echo "We need an argument." 1>&2 ; return 1 ; } ;;
+        *)          echo "We need a suitable argument." 1>&2
+                    return 1
     esac
 
     find -H "$datadir" -mindepth 2 -type f -name _index -print | xargs -r cut -d'|' -f "$field" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
