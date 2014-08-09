@@ -758,7 +758,7 @@ __um_edit()
             cp -- "${datadir}/${euuid}/${eid}" "$file_tmp"
             pushd "$euuid" >/dev/null
             md5_pre=$(md5sum "$file_tmp")
-            $editor "$file_tmp" < /dev/tty
+            $editor "$file_tmp" </dev/tty
             date=$(date --utc --date now +%s)
             md5_post=$(md5sum "$file_tmp")
             if [[ $md5_pre != $md5_post ]]
