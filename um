@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.5.2" ; }
+__um_version() { echo "0.2.5.3" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -101,7 +101,7 @@ ARGUMENTS
     <NAME>*                     'string'
     <PART>*                     'string'
     <REF>*                      'int' or 'int,int'
-    <SCHEME>''                  'http','https','ftp','ftps','dav','davs',
+    <SCHEME>                    'http','https','ftp','ftps','dav','davs',
                                 'gopher','webdav','webdavs
     <TAG>*                      'string' or 'string;string;string'
     <URI>                       'string'
