@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.3.3" ; }
+__um_version() { echo "0.2.3.4" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
 
@@ -185,8 +185,7 @@ __um_search()
             else
                 operator=${operator:-or}
                 operators[$operator]=${operators[$operator]:-1}
-                case $var
-                in
+                case $var in
                     uuid)
                             __um_search_parse_val
                             find -H "${datadir}" -mindepth 2 -type f \
@@ -389,7 +388,6 @@ __um_search()
                                         ids[0]=$((${ids[0]} + 1))
                                     fi
                                 done
-
                                 while :
                                 do
                                     if [[ $(tmpdir=${tmpdir}_ ; \
@@ -401,7 +399,6 @@ __um_search()
                                         ids[1]=$((${ids[1]} - 1))
                                     fi
                                 done
-
                                 find -H "${datadir}" -mindepth 2 -type f \
                                         -name _index -print | \
                                     xargs -r cut -d '|' -f1,2 | \
@@ -443,8 +440,7 @@ __um_search()
                                 __um_search_parse_val
                                 find -H "${datadir}" -mindepth 2 -type f \
                                         ! -name _index -regextype posix-egrep \
-                                        ${not:+\!} \
-                                        -regex "^${datadir}/.*/${pattern}" \
+                                        ${not:+\!} -regex "^${datadir}/.*/${pattern}" \
                                         -printf '%P\n' | \
                                     tr '/' ' ' \
                                     >> "${tmpdir}/${operator}${operators[$operator]}"
@@ -1029,30 +1025,24 @@ __um_info()
 
 __um_rebuild()
 {
-    declare \
-            dir= \
-            ruuid= \
-            succeeded=
-
     declare -ga dir_stack=()
 
     if (($# == 0))
     then
         while IFS= read -d '' -r
         do
-            succeeded=succeeded && pushd "$REPLY" >/dev/null
-        done < <(find -H "${datadir}" -maxdepth 1 -type d -print0)
+            pushd "$REPLY" 1>/dev/null
+        done < <(find -H "$datadir" -maxdepth 1 -type d -printf '%f\0')
     else
-        while read -r ruuid _
+        while read -r
         do
-            (( ruuid )) && succeeded=succeeded && pushd "$ruuid" >/dev/null
-            unset -v ruuid
-        done < <(__um_main search "$@")
+            pushd "${REPLY%% *}" 1>/dev/null
+        done < <(__um_search "$@" && __um_search_post)
     fi
 
-    if [[ $succeeded ]]
+    if ((${#DIRSTACK[@]} > 1))
     then
-        dir_stack+=($(dirs -l -p))
+        dir_stack=($(dirs -l -p))
         { echo "Index is being rebuild..." 1>&2 ; return 0 ; }
     else
         { echo "No index has been rebuild." 1>&2 ; return 1 ; }
@@ -1061,78 +1051,66 @@ __um_rebuild()
 
 __um_rebuild_index()
 {
-    shopt -s extglob
-
     declare \
-            dir= \
-            i=
+        dir= \
+        i=
 
     while read -r dir
     do
         declare -a \
-                   r_au=() \
-                   r_db=() \
-                   r_desc=() \
-                   r_dm=() \
-                   r_hier=() \
-                   r_id=() \
-                   r_name=() \
-                   r_part=() \
-                   r_ref=() \
-                   r_scheme=() \
-                   r_tag=() \
-                   r_uuid=() \
-                   uri_scheme_specific_part_reference \
-                   uri_scheme_specific_part_tag
-
+           r_au=() \
+           r_db=() \
+           r_desc=() \
+           r_dm=() \
+           r_hier=() \
+           r_id=() \
+           r_name=() \
+           r_part=() \
+           r_ref=() \
+           r_scheme=() \
+           r_tag=() \
+           r_uuid=() \
+           uri_scheme_specific_part_reference=() \
+           uri_scheme_specific_part_tag=()
         declare \
-                date_build= \
-                date_modification= \
-                uri_authority= \
-                uri_scheme= \
-                uri_scheme_specific_part= \
-                uri_scheme_specific_part_description= \
-                uri_scheme_specific_part_hierarchy= \
-                uri_scheme_specific_part_id= \
-                uri_scheme_specific_part_name= \
-                uuid=
-
-        rm -- "${dir}/_index" 2>/dev/null
-        cd -- "$dir" 2>/dev/null &&
-        {
-            while read -r
-            do
-                source "$REPLY" 2>/dev/null &&
-                {
-                    r_uuid+=($uuid)
-                    r_db+=($date_build)
-                    r_dm+=($date_modification)
-                    r_au+=("$uri_authority")
-                    r_id+=($uri_scheme_specific_part_id)
-                    r_scheme+=("$uri_scheme")
-                    r_part+=("$uri_scheme_specific_part")
-                    r_desc+=("$uri_scheme_specific_part_description")
-                    r_name+=("$uri_scheme_specific_part_name")
-                    r_hier+=("$uri_scheme_specific_part_hierarchy")
-                    r_ref+=("$(printf '%s;' "${uri_scheme_specific_part_reference[@]}")")
-                    r_tag+=("$(printf '%s;' "${uri_scheme_specific_part_tag[@]}")")
-                }
-
-                unset -v \
-                         uri_scheme_specific_part_reference \
-                         uri_scheme_specific_part_tag
-            done < <(printf "${dir}/%s\n" !(_index) 2>/dev/null)
-
-            exec 3>"${dir}/_index"
-            for i in "${!r_uuid[@]}"
-            do
-                printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" >&3
-            done
-            exec 3<&-
-        }
+            date_build= \
+            date_modification= \
+            uri_authority= \
+            uri_scheme= \
+            uri_scheme_specific_part= \
+            uri_scheme_specific_part_description= \
+            uri_scheme_specific_part_hierarchy= \
+            uri_scheme_specific_part_id= \
+            uri_scheme_specific_part_name= \
+            uuid=
+        > "${dir}/_index"
+        while read -r
+        do
+            source "$REPLY" 2>/dev/null &&
+            {
+                r_uuid+=($uuid)
+                r_db+=($date_build)
+                r_dm+=($date_modification)
+                r_au+=("$uri_authority")
+                r_id+=($uri_scheme_specific_part_id)
+                r_scheme+=("$uri_scheme")
+                r_part+=("$uri_scheme_specific_part")
+                r_desc+=("$uri_scheme_specific_part_description")
+                r_name+=("$uri_scheme_specific_part_name")
+                r_hier+=("$uri_scheme_specific_part_hierarchy")
+                r_ref+=("$(printf '%s;' "${uri_scheme_specific_part_reference[@]}")")
+                r_tag+=("$(printf '%s;' "${uri_scheme_specific_part_tag[@]}")")
+            }
+            uri_scheme_specific_part_reference=()
+            uri_scheme_specific_part_tag=()
+        done < <(find -H "$dir" -mindepth 1 -maxdepth 1 -type f ! -name _index -print)
+        exec 3>"${dir}/_index"
+        for i in "${!r_uuid[@]}"
+        do
+            printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" >&3
+        done
+        exec 3<&-
     done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${datadir}/.*" | sort | uniq)
-
-    shopt -u extglob
 }
 
 __um_random()
@@ -1286,7 +1264,7 @@ __um_main()
     shift $((OPTIND-1))
 
     case $action in
-        add)#
+        add)
                 __um_add "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
                 unset -v dir_stack
                 ;;
@@ -1319,7 +1297,7 @@ __um_main()
                 unset -v dir_stack non_interactive mod mods patterns i
                 ;;
         rebuild)#
-                __um_rebuild "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
+                __um_rebuild "${patterns[@]}" && __um_rebuild_index && echo "Done." 1>&2
                 unset -v dir_stack
                 ;;
         search)
