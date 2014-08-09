@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.5.0" ; }
+__um_version() { echo "0.2.5.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -804,9 +804,9 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
 __um_delete()
 {
     declare \
-            d= \
-            delete_all= \
-            response=
+        d= \
+        delete_all= \
+        response=
 
     declare -a deletion=()
 
@@ -818,7 +818,7 @@ __um_delete()
     else
         while read -r
         do
-            if [[ $delete_all || $non_interactive ]]
+            if [[ $delete_all == delete_all || $non_interactive == non_interactive ]]
             then
                 deletion+=("$REPLY")
             else
@@ -828,11 +828,11 @@ __um_delete()
                     all)    delete_all=delete_all        ;&
                     y|yes)  deletion+=("$REPLY")         ;;
                     n|no)   continue                    ;;
-                    quit)   unset -v deletion ; break   ;;
+                    quit)   deletion=() ; break         ;;
                     *)      continue                    ;;
                 esac
             fi
-        done 3<&0 < <(__um_main search "$@")
+        done 3<&0 < <(__um_search "$@" && __um_search_post)
 
         if ((${#deletion[@]} != 0))
         then
@@ -841,12 +841,11 @@ __um_delete()
                 pushd "${d% *}" >/dev/null
                 rm -- "${datadir}/${d% *}/${d#* }"
             done
-            dir_stack+=($(dirs -l -p))
+            dir_stack=($(dirs -l -p))
             rm -- "${datadir}/${d% *}/_index" 2>/dev/null
-            echo "Records has been deleted." 1>&2
-            echo "Index is being rebuild..." 1>&2
+            echo "Records have been deleted." 1>&2
         else
-            { echo "No Records has been deleted." 1>&2 ; return 1 ; }
+            { echo "No Record has been deleted." 1>&2 ; return 1 ; }
         fi
     fi
 }
@@ -1253,10 +1252,14 @@ __um_main()
                 __um_cloud "${patterns[0]}"
                 ;;
         delete)#
-                __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; }
+                __um_delete "${patterns[@]}" &&
+                {
+                    __um_delete_empty_dirs
+                    __um_rebuild_index
+                }
                 unset -v dir_stack non_interactive
                 ;;
-        edit)#
+        edit)
                 __um_edit "${patterns[@]}"
                 unset -v dir_stack
                 ;;
