@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.4.4" ; }
+__um_version() { echo "0.2.5.0" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -728,11 +728,11 @@ __um_edit()
         eid= \
         euuid= \
         file_tmp= \
-        i= \
         j= \
         k= \
         md5_post= \
         md5_pre= \
+        modification= \
         uri_authority= \
         uri_scheme= \
         uri_scheme_specific_part= \
@@ -752,26 +752,22 @@ __um_edit()
     then
         { echo "No arguments has been specified." 1>&2 ; return 1 ; }
     else
-        for i
+        while read -r euuid eid
         do
-            if [[ ${i%=*} =~ (id|uri) ]]
+            file_tmp=$(mktemp ${tmpdir}/urimark.XXXXXX)
+            cp -- "${datadir}/${euuid}/${eid}" "$file_tmp"
+            pushd "$euuid" >/dev/null
+            md5_pre=$(md5sum "$file_tmp")
+            $editor "$file_tmp" < /dev/tty
+            date=$(date --utc --date now +%s)
+            md5_post=$(md5sum "$file_tmp")
+            if [[ $md5_pre != $md5_post ]]
             then
-                read -r euuid eid < <(__um_search "$i" && __um_search_post)
-                if ((euuid && eid))
-                then
-                    file_tmp=$(mktemp ${tmpdir}/urimark.XXXXXX)
-                    cp -- "${datadir}/${euuid}/${eid}" "$file_tmp"
-                    pushd "$euuid" >/dev/null
-                    md5_pre=$(md5sum "$file_tmp")
-                    ${editor} "${file_tmp}"
-                    date=$(date --utc --date now +%s)
-                    md5_post=$(md5sum "$file_tmp")
-                    if [[ $md5_pre != $md5_post ]]
-                    then
-                        source "$file_tmp"
-                        date_modification=$date
-                        {
-                            printf '%s\n' "uuid=$uuid
+                (
+                    source "$file_tmp"
+                    date_modification=$date
+                    {
+                        printf '%s\n' "uuid=$uuid
 date_build=$date_build
 date_modification=$date_modification
 uri_authority=\"${uri_authority}\"
@@ -781,28 +777,27 @@ uri_scheme_specific_part_description=\"${uri_scheme_specific_part_description}\"
 uri_scheme_specific_part_hierarchy=\"${uri_scheme_specific_part_hierarchy}\"
 uri_scheme_specific_part_name=\"${uri_scheme_specific_part_name}\"
 uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
-                            for j in "${!uri_scheme_specific_part_reference[@]}"
-                            do
-                                printf '%s\n' "uri_scheme_specific_part_reference[$j]=${uri_scheme_specific_part_reference[$j]}"
-                            done
-                            for k in "${!uri_scheme_specific_part_tag[@]}"
-                            do
-                                printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
-                            done
-                        } > "${datadir}/${euuid}/${eid}"
-                        echo "Data set has been modified." 1>&2
-                        dir_stack+=($(dirs -l -p))
-                        return 0
-                    else
-                         { echo "Data set has not been modified." 1>&2 ; return 1 ; }
-                    fi
-                else
-                    { echo "No matching." 1>&2 ; return 1 ; }
-                fi
+                        for j in "${!uri_scheme_specific_part_reference[@]}"
+                        do
+                            printf '%s\n' "uri_scheme_specific_part_reference[$j]=${uri_scheme_specific_part_reference[$j]}"
+                        done
+                        for k in "${!uri_scheme_specific_part_tag[@]}"
+                        do
+                            printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
+                        done
+                    } > "${datadir}/${euuid}/${eid}"
+                    echo "Data set with id $eid has been modified." 1>&2
+                )
+                modification=modification
             else
-                { printf '%s\n' "Search pattern '$i' is not allowed." 1>&2 ; return 1 ; }
+                echo "Data set with id $eid has not been modified." 1>&2
             fi
-        done
+        done < <(__um_search "$@" && __um_search_post)
+        [[ $modification == modification ]] &&
+        {
+            dir_stack=($(dirs -l -p))
+            __um_rebuild_index
+        }
     fi
 }
 
@@ -1262,7 +1257,7 @@ __um_main()
                 unset -v dir_stack non_interactive
                 ;;
         edit)#
-                __um_edit "${patterns[@]}" && __um_rebuild_index
+                __um_edit "${patterns[@]}"
                 unset -v dir_stack
                 ;;
         help)
