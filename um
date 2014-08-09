@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.5.1" ; }
+__um_version() { echo "0.2.5.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -872,7 +872,7 @@ __um_modify()
 
     if ((${#mods[@]} == 0))
     then
-         { printf '%s\n' "We need to specify a modification." 1>&2 ; return 1 ; }
+         { echo "We need to specify a modification pattern." 1>&2 ; return 1 ; }
     else
         for i in "${!mods[@]}"
         do
@@ -902,9 +902,7 @@ __um_modify()
                         done
                         printf -v tag '%s|' "${tags[@]//^/}"
                         tag=${tag//$/}
-                        tag=${tag%|*}
-
-                        mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"(${tag})\"$|\1\"${mods[i]#*=}\"|"
+                        mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"(${tag%|*})\"$|\1\"${mods[i]#*=}\"|"
                         ;;
                 tag-=*)
                         mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*=}\"$/d"
@@ -920,9 +918,7 @@ __um_modify()
                         done
                         printf -v ref '%s|' "${references[@]//^/}"
                         ref=${ref//$/}
-                        ref=${ref%|*}
-
-                        mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)(${ref})$|\1${mods[i]#*=}|"
+                        mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)(${ref%|*})$|\1${mods[i]#*=}|"
                         ;;
                 reference-=*)
                         mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*=}$/d"
@@ -937,37 +933,46 @@ __um_modify()
             esac
         done
 
-        while read -r record
+        while read -r
         do
-            if [[ $modify_all || $non_interactive ]]
+            if [[ $modify_all=modify_all  || $non_interactive=non_interactive ]]
             then
-                modification+=("${datadir}/${record% *}/${record#* }")
-                pushd "${record% *}" >/dev/null
+                modification+=("${datadir}/${REPLY% *}/${REPLY#* }")
+                pushd "${REPLY% *}" >/dev/null
             else
                 printf 'UUID: %s\nID:   %s\n' $record
                 read -u 3 -p "Do you really wanne modify this record? (y/n/all/quit) " response
                 case $response in
-                    all)    modify_all=modify_all   ;&
+                    all)
+                            modify_all=modify_all
+                            ;&
                     y|yes)
-                            modification+=("${datadir}/${record% *}/${record#* }")
-                            pushd "${record% *}" >/dev/null
+                            modification+=("${datadir}/${REPLY% *}/${REPLY#* }")
+                            pushd "${REPLY% *}" >/dev/null
                             ;;
-                    n|no)   continue ;;
-                    quit)   unset -v modification ; break   ;;
-                    *)      continue    ;;
+                    n|no)
+                            continue
+                            ;;
+                    quit)
+                            modification=()
+                            break
+                            ;;
+                    *)
+                            continue
+                            ;;
                 esac
             fi
-        done 3<&0 < <(__um_main search "${patterns[@]}")
+        done 3<&0 < <(__um_search "${patterns[@]}" && __um_search_post)
 
         if ((${#modification[@]} != 0))
         then
-            dir_stack+=($(dirs -l -p))
+            dir_stack=($(dirs -l -p))
             date=$(date --utc --date now +%s)
-            printf '%q\n' "${modification[@]}" | xargs -d '\n' sed -i -r -e "/date_modification=.*/ c date_modification=${date}" "${mods[@]}"
-            echo "Records has been modified." 1>&2
-            echo "Index is being rebuild..." 1>&2
+            printf '%s\n' "${modification[@]}" | \
+                xargs -r sed -r -i -e "/date_modification=.*/ c date_modification=${date}" "${mods[@]}"
+            echo "Records have been modified." 1>&2
         else
-            { echo "No Records has been modified." 1>&2 ; return 1 ; }
+            { echo "No Record has been modified." 1>&2 ; return 1 ; }
         fi
     fi
 }
@@ -1251,7 +1256,7 @@ __um_main()
         cloud)
                 __um_cloud "${patterns[0]}"
                 ;;
-        delete)#
+        delete)
                 __um_delete "${patterns[@]}" &&
                 {
                     __um_delete_empty_dirs
@@ -1273,11 +1278,16 @@ __um_main()
                 __um_list "${patterns[@]}"
                 unset -v build_uri
                 ;;
-        modify)#
+        modify)
                 for i in "${!patterns[@]}"
                 do
-                    [[ ${patterns[$i]} == mod ]] && mod=mod && unset -v "patterns[$i]" && continue
-                    [[ $mod == mod ]] && mods+=("${patterns[$i]}") && unset -v "patterns[$i]"
+                    [[ ${patterns[$i]} == mod ]] && \
+                        mod=mod && \
+                        unset -v "patterns[$i]" && \
+                        continue
+                    [[ $mod == mod ]] && \
+                        mods+=("${patterns[$i]}") && \
+                        unset -v "patterns[$i]"
                 done
                 __um_modify && __um_rebuild_index
                 unset -v dir_stack non_interactive mod mods patterns i
