@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.3.1" ; }
+__um_version() { echo "0.2.3.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
 
@@ -456,10 +456,9 @@ __um_search()
                                 search_uri_schemes_specific_parts \
                                 <<< "${val##*://}"
                             search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
-
                             find -H "${datadir}" -mindepth 2 -type f \
                                     -name _index -print | \
-                                xargs -r --null egrep ${not:+-v} -h \
+                                xargs -r egrep ${not:+-v} -h \
                                     -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
@@ -578,6 +577,154 @@ __um_search_post()
     fi
 }
 
+__um_add()
+{
+    declare \
+        aid= \
+        authority= \
+        auuid= \
+        bd= \
+        date= \
+        description= \
+        hierarchy= \
+        i= \
+        id= \
+        md= \
+        name= \
+        part= \
+        scheme= \
+        succeeded= \
+        uri= \
+        uuid=
+
+    declare -a \
+        references=() \
+        tags=()
+
+    declare -ga dir_stack=()
+
+    if (($# == 0))
+    then
+        read -re -p "URI: " uri
+        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
+        then
+            { echo "Wrong scheme." 1>&2 ; return 1 ; }
+        elif [[ $(tmpdir=${tmpdir}_ ; __um_search uri="${uri}" 2>/dev/null && \
+            __um_search_post 2>/dev/null) ]]
+        then
+            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
+        fi
+        read -re -p "Name: " name
+        read -re -p "Description: " description
+        IFS=';' read -re -p "Tags: " -a tags
+        read -re -p "Hierarchy: " hierarchy
+        IFS=';' read -re -p "References: " -a references
+    else
+        for i
+        do
+            case $i in
+                uri=*)
+                        uri=${i#*=}
+                        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
+                        then
+                            { echo "Wrong scheme." 1>&2 ; return 1 ; }
+                        elif [[ $(tmpdir=${tmpdir}_ ; __um_search uri="${uri}" 2>/dev/null && \
+                                __um_search_post 2>/dev/null) ]]
+                        then
+                            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
+                        fi
+                        ;;
+                name=*)
+                        name=${i#*=}
+                        ;;
+                description=*)
+                        description=${i#*=}
+                        ;;
+                hierarchy=*)
+                        hierarchy=${i#*=}
+                        ;;
+                tag=*)
+                        IFS=';' read -r -a tags <<< "${i#*=}"
+                        ;;
+                reference=*)
+                        IFS=';' read -r -a references <<< "${i#*=}"
+                        ;;
+            esac
+        done
+        [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
+    fi
+
+    date=$(date --utc --date now +%s)
+
+    ((${#tags[@]} == 0)) && tags[0]=null
+    ((${#references[@]} == 0)) && references[0]=null
+
+    bd=$date
+    md=$date
+    id=$(__um_calculating_id)
+    id=${id:-1}
+
+    scheme=${uri%%:*}
+    IFS='/' read -r authority part <<< "${uri##*://}"
+    part=/${part%%/}
+
+    read -r auuid aid < <(tmpdir=${tmpdir}_ ; __um_search authority=^${authority}$ 2>/dev/null && \
+        __um_search_post 2>/dev/null)
+    if [[ $auuid && $aid ]]
+    then
+        uuid=$auuid
+        pushd "$uuid" 1>/dev/null
+        printf '%s\n' "Authority has already been recorded at file://${datadir}/${auuid} ." 1>&2
+        __um_add_print && succeeded=succeeded
+    else
+        uuid=$(__um_random 8)
+        mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." 1>&2
+        pushd "$uuid" 1>/dev/null
+        __um_add_print && succeeded=succeeded
+    fi
+
+    if [[ $succeeded ]]
+    then
+        printf '%s\n' "New URI with id ${id} has been recorded." 1>&2
+        dir_stack=($(dirs -l -p))
+        echo "Index is being rebuild..." 1>&2
+    else
+         { printf '%s\n' "URI has not been recorded." 1>&2 ; return 1 ; }
+    fi
+}
+
+__um_add_print()
+{
+    declare \
+            j= \
+            k=
+
+    exec 3>"${datadir}/${uuid}/${id}"
+
+    printf '%s\n' "uuid=$uuid
+date_build=$bd
+date_modification=$md
+uri_authority=\"${authority}\"
+uri_scheme=\"${scheme}\"
+uri_scheme_specific_part=\"${part}\"
+uri_scheme_specific_part_description=\"${description:-null}\"
+uri_scheme_specific_part_hierarchy=\"${hierarchy:-null}\"
+uri_scheme_specific_part_name=\"${name:-null}\"
+uri_scheme_specific_part_id=$id" >&3
+
+    for j in "${!references[@]}"
+    do
+        printf '%s\n' "uri_scheme_specific_part_reference[$j]=${references[$j]}"
+    done 1>&3
+
+    for k in "${!tags[@]}"
+    do
+        printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${tags[$k]}\""
+    done 1>&3
+
+    exec 3<&-
+}
+
 __um_edit()
 {
     declare \
@@ -664,151 +811,6 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
             fi
         done
     fi
-}
-
-__um_add()
-{
-    declare \
-            aid= \
-            authority= \
-            auuid= \
-            bd= \
-            date= \
-            description= \
-            hierarchy= \
-            i= \
-            id= \
-            md= \
-            name= \
-            part= \
-            scheme= \
-            succeeded= \
-            uri= \
-            uuid=
-
-    declare -a \
-               references=() \
-               tags=()
-
-    declare -ga dir_stack=()
-
-    if (($# == 0))
-    then
-        read -re -p "URI: " uri
-        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
-        then
-            { echo "Wrong scheme." 1>&2 ; return 1 ; }
-        elif (__um_search uri=${uri} 2>/dev/null)
-        then
-            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
-        fi
-        read -re -p "Name: " name
-        read -re -p "Description: " description
-        IFS=';' read -re -p "Tags: " -a tags
-        read -re -p "Hierarchy: " hierarchy
-        IFS=';' read -re -p "References: " -a references
-    else
-        for i
-        do
-            case $i in
-                uri=*)
-                        uri=${i#*=}
-                        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
-                        then
-                            { echo "Wrong scheme." 1>&2 ; return 1 ; }
-                        elif (__um_search uri=${uri} 2>/dev/null)
-                        then
-                            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
-                        fi
-                        ;;
-                name=*)
-                        name=${i#*=}
-                        ;;
-                description=*)
-                        description=${i#*=}
-                        ;;
-                hierarchy=*)
-                        hierarchy=${i#*=}
-                        ;;
-                tag=*)
-                        IFS=';' read -r -a tags <<< "${i#*=}"
-                        ;;
-                reference=*)
-                        IFS=';' read -r -a references <<< "${i#*=}"
-                        ;;
-            esac
-        done
-        [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
-    fi
-
-    date=$(date --utc --date now +%s)
-
-    ((${#tags[@]} == 0)) && tags[0]=null
-    ((${#references[@]} == 0)) && references[0]=null
-
-    bd=$date
-    md=$date
-    id=$(__um_calculating_id)
-    id=${id:-1}
-
-    scheme=${uri%%:*}
-    IFS='/' read -r authority part <<< "${uri##*://}"
-    part=/${part%%/}
-
-    read -r auuid aid _ < <(__um_main search authority=^${authority}$ 2>/dev/null)
-    if ((auuid && aid))
-    then
-        uuid=$auuid
-        pushd "$uuid" 1>/dev/null
-        printf '%s\n' "Authority has already been recorded at file://${datadir}/${auuid} ." 1>&2
-        __um_add_print && succeeded=succeeded
-    else
-        uuid=$(__um_random 8)
-        mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." 1>&2
-        pushd "$uuid" 1>/dev/null
-        __um_add_print && succeeded=succeeded
-    fi
-
-    if [[ $succeeded ]]
-    then
-        printf '%s\n' "New URI with id ${id} has been recorded." 1>&2
-        dir_stack+=($(dirs -l -p))
-        echo "Index is being rebuild..." 1>&2
-    else
-         { printf '%s\n' "URI has not been recorded." 1>&2 ; return 1 ; }
-    fi
-}
-
-__um_add_print()
-{
-    declare \
-            j= \
-            k=
-
-    exec 3>"${datadir}/${uuid}/${id}"
-
-    printf '%s\n' "uuid=$uuid
-date_build=$bd
-date_modification=$md
-uri_authority=\"${authority}\"
-uri_scheme=\"${scheme}\"
-uri_scheme_specific_part=\"${part}\"
-uri_scheme_specific_part_description=\"${description:-null}\"
-uri_scheme_specific_part_hierarchy=\"${hierarchy:-null}\"
-uri_scheme_specific_part_name=\"${name:-null}\"
-uri_scheme_specific_part_id=$id" >&3
-
-    for j in "${!references[@]}"
-    do
-        printf '%s\n' "uri_scheme_specific_part_reference[$j]=${references[$j]}"
-    done 1>&3
-
-    for k in "${!tags[@]}"
-    do
-        printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${tags[$k]}\""
-    done 1>&3
-
-    exec 3<&-
 }
 
 __um_delete()
