@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.4.0" ; }
+__um_version() { echo "0.2.4.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1165,11 +1165,11 @@ __um_main()
             uri=*)              args="${args}-1 ${delim}${arg#*=}${delim} "     ;;
             uuid=*)             args="${args}-0 ${arg#*=} "                     ;;
             version)            args="${args}-v "                               ;;
-            *)                  if [[ ${arg:0:1} != - ]]
+            *)                  if [[ ${arg:0:1} == - ]]
                                 then
-                                    args="${args}${delim}${arg}${delim} "
-                                else
                                     args="${args}${arg} "
+                                else
+                                    args="${args}${delim}${arg}${delim} "
                                 fi
                                 ;;
         esac
@@ -1227,11 +1227,18 @@ __um_main()
                 u)  build_uri=build_uri                               ;;
                 v)  action=version                                    ;;
                 Y)  __um_check_args "authority=$OPTARG"               ;;
+                :)  printf '%s\n' "Option -${OPTARG} requires an argument." >&2
+                    exit 1                                            ;;
                 \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
                     exit 1                                            ;;
         esac
     done
-    shift $((OPTIND-1))
+    if (($# + 1 != $OPTIND))
+    then
+        { printf '%s\n' "Command line does not fit: $*." 1>&2 ; exit 1 ; }
+    else
+        shift $((OPTIND-1))
+    fi
 
     case $action in
         add)
