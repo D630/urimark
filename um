@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.3.0" ; }
+__um_version() { echo "0.2.3.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
 
@@ -380,8 +380,9 @@ __um_search()
 
                                 while :
                                 do
-                                    if (tmpdir=${tmpdir}_ __um_search \
-                                        id=^${ids[0]}$ 1>/dev/null 2>&1)
+                                    if [[ $(tmpdir=${tmpdir}_ ; \
+                                        __um_search id=^${ids[0]}$ 2>/dev/null && \
+                                        __um_search_post 2>/dev/null) ]]
                                     then
                                         break
                                     else
@@ -391,8 +392,9 @@ __um_search()
 
                                 while :
                                 do
-                                    if (tmpdir=${tmpdir}_ __um_search \
-                                        id=^${ids[1]}$ 1>/dev/null 2>&1)
+                                    if [[ $(tmpdir=${tmpdir}_ ; \
+                                        __um_search id=^${ids[1]}$ 2>/dev/null && \
+                                        __um_search_post 2>/dev/null) ]]
                                     then
                                         break
                                     else
@@ -1322,7 +1324,7 @@ __um_main()
 # -- MAIN.
 
 declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
-declare -r datadir=${URIMARK_DATA:-${predir_datadir}/urimark}
+declare -r datadir=${URIMARK_DATA:-${predir_datadir}/urimark/data}
 declare -r \
     CDPATH=$datadir \
     editor=${X_TTY_EDITOR:-nano}
