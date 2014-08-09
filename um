@@ -853,20 +853,20 @@ __um_delete()
 __um_modify()
 {
     declare \
-            date= \
-            i= \
-            j= \
-            k= \
-            modify_all= \
-            record= \
-            ref= \
-            response= \
-            tag=
+        date= \
+        i= \
+        j= \
+        k= \
+        modify_all= \
+        record= \
+        ref= \
+        response= \
+        tag=
 
     declare -a \
-               modification=() \
-               references=() \
-               tags=()
+       modification=() \
+       references=() \
+       tags=()
 
     declare -ga dir_stack=()
 
