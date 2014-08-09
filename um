@@ -49,7 +49,8 @@ SUBCOMMANDS
     -c, --cloud=<CFIELD>
     -d, --delete                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
                                 -o,-S,-T,-Y
-    -e, --edit                  <EEXP>
+    -e, --edit                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
+                                -S,-T,-Y
     -h, --help
     -i, --info
     -l, --list                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
@@ -94,7 +95,6 @@ ARGUMENTS
     <CFIELD>                    'scheme', 'authority', 'part',
                                 'hierarchy', 'tag' or 'reference'
     <DESC>*                     'string'
-    <EEXP>*                     <UUID> or <ID>
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi)
     <MD>*                       'date' or 'date,date'
