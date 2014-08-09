@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.5.3" ; }
+__um_version() { echo "0.2.5.4" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -468,7 +468,7 @@ __um_search()
     fi
 }
 
-__um_search_binary()
+__um_search_binary() #ü
 {
     declare \
             b= \
@@ -1097,7 +1097,7 @@ __um_random()
 {
     declare random=
 
-    random=$(od -vAn -N"${1}" -tu < /dev/urandom)
+    random=$(od -vAn -N "$1" -tu </dev/urandom)
     printf '%s\n' "${random// /}"
 }
 
