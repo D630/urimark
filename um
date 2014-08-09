@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.3.4" ; }
+__um_version() { echo "0.2.4.0" ; }
 
-__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-r|-s|-v)' ; }
+__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
 __um_help()
 {
@@ -56,8 +56,6 @@ SUBCOMMANDS
                                 -S,-T,-u,-Y
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
-    -r, --rebuild               -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-Y
     -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
                                 -P,-S,-T,-u,-Y
     -v, --version
@@ -1023,32 +1021,6 @@ __um_info()
     printf '%s\n' "Authorities: $(find -H "${datadir}" -maxdepth 1 -mindepth 1 -type d ! -name _index | wc -l)" "URIs: $(find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r sed -n '$=')"
 }
 
-__um_rebuild()
-{
-    declare -ga dir_stack=()
-
-    if (($# == 0))
-    then
-        while IFS= read -d '' -r
-        do
-            pushd "$REPLY" 1>/dev/null
-        done < <(find -H "$datadir" -maxdepth 1 -type d -printf '%f\0')
-    else
-        while read -r
-        do
-            pushd "${REPLY%% *}" 1>/dev/null
-        done < <(__um_search "$@" && __um_search_post)
-    fi
-
-    if ((${#DIRSTACK[@]} > 1))
-    then
-        dir_stack=($(dirs -l -p))
-        { echo "Index is being rebuild..." 1>&2 ; return 0 ; }
-    else
-        { echo "No index has been rebuild." 1>&2 ; return 1 ; }
-    fi
-}
-
 __um_rebuild_index()
 {
     declare \
@@ -1182,7 +1154,6 @@ __um_main()
             or)                 args="${args}-o "                               ;;
             part=*)             args="${args}-T ${delim}${arg#*=}${delim} "     ;;
             print-uri)          args="${args}-u "                               ;;
-            rebuild)            args="${args}-r "                               ;;
             reference=*)        args="${args}-5 ${delim}${arg#*=}${delim} "     ;;
             reference+=*)       args="${args}-6 ${delim}${arg#*+=}${delim} "    ;;
             reference-=*)       args="${args}-7 ${delim}${arg#*-=}${delim} "    ;;
@@ -1219,7 +1190,7 @@ __um_main()
                 patterns=()
 
     eval set -- "$args"
-    while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:ur5:6:7:S:2:3:4:0:1:hv opt
+    while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
     do
         case $opt in
                 0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1250,7 +1221,6 @@ __um_main()
                 o)  patterns+=(or)                                    ;;
                 !)  patterns+=(not)                                   ;;
                 P)  path_absolute=path_absolute                       ;;
-                r)  action=rebuild                                    ;;
                 s)  action=search                                     ;;
                 S)  __um_check_args "scheme=$OPTARG"                  ;;
                 T)  __um_check_args "part=$OPTARG"                    ;;
@@ -1295,10 +1265,6 @@ __um_main()
                 done
                 __um_modify && __um_rebuild_index && echo "Done." 1>&2
                 unset -v dir_stack non_interactive mod mods patterns i
-                ;;
-        rebuild)#
-                __um_rebuild "${patterns[@]}" && __um_rebuild_index && echo "Done." 1>&2
-                unset -v dir_stack
                 ;;
         search)
                 __um_search "${patterns[@]}" && __um_search_post
