@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.4.3" ; }
+__um_version() { echo "0.2.4.4" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -722,57 +722,56 @@ uri_scheme_specific_part_id=$id" >&3
 __um_edit()
 {
     declare \
-            date= \
-            date_build= \
-            date_modification= \
-            eid= \
-            euuid= \
-            file_tmp= \
-            i= \
-            j= \
-            k= \
-            md5_post= \
-            md5_pre= \
-            uri_authority= \
-            uri_scheme= \
-            uri_scheme_specific_part= \
-            uri_scheme_specific_part_description= \
-            uri_scheme_specific_part_hierarchy= \
-            uri_scheme_specific_part_id= \
-            uri_scheme_specific_part_name= \
-            uuid=
+        date= \
+        date_build= \
+        date_modification= \
+        eid= \
+        euuid= \
+        file_tmp= \
+        i= \
+        j= \
+        k= \
+        md5_post= \
+        md5_pre= \
+        uri_authority= \
+        uri_scheme= \
+        uri_scheme_specific_part= \
+        uri_scheme_specific_part_description= \
+        uri_scheme_specific_part_hierarchy= \
+        uri_scheme_specific_part_id= \
+        uri_scheme_specific_part_name= \
+        uuid=
 
     declare -ga dir_stack=()
 
     declare -a \
-               uri_scheme_specific_part_reference=() \
-               uri_scheme_specific_part_tag=()
+       uri_scheme_specific_part_reference=() \
+       uri_scheme_specific_part_tag=()
 
     if (($# == 0))
     then
-        { echo "No Arguments" 1>&2 ; return 1 ; }
+        { echo "No arguments has been specified." 1>&2 ; return 1 ; }
     else
         for i
         do
             if [[ ${i%=*} =~ (id|uri) ]]
             then
-                read -r euuid eid < <(__um_main search "$i")
+                read -r euuid eid < <(__um_search "$i" && __um_search_post)
                 if ((euuid && eid))
                 then
-                    {
-                        file_tmp=$(mktemp ${TMPDIR:-/tmp}/urimark.XXXXXX) && cp -- "${datadir}/${euuid}/${eid}" "$file_tmp" &&
+                    file_tmp=$(mktemp ${tmpdir}/urimark.XXXXXX)
+                    cp -- "${datadir}/${euuid}/${eid}" "$file_tmp"
+                    pushd "$euuid" >/dev/null
+                    md5_pre=$(md5sum "$file_tmp")
+                    ${editor} "${file_tmp}"
+                    date=$(date --utc --date now +%s)
+                    md5_post=$(md5sum "$file_tmp")
+                    if [[ $md5_pre != $md5_post ]]
+                    then
+                        source "$file_tmp"
+                        date_modification=$date
                         {
-                            pushd "$euuid" >/dev/null
-                            md5_pre=$(md5sum "$file_tmp")
-                            ${editor} "${file_tmp}"
-                            date=$(date --utc --date now +%s)
-                            md5_post=$(md5sum "$file_tmp")
-                            if [[ $md5_pre != $md5_post ]]
-                            then
-                                source "$file_tmp"
-                                date_modification=$date
-                                {
-                                    printf '%s\n' "uuid=$uuid
+                            printf '%s\n' "uuid=$uuid
 date_build=$date_build
 date_modification=$date_modification
 uri_authority=\"${uri_authority}\"
@@ -782,26 +781,26 @@ uri_scheme_specific_part_description=\"${uri_scheme_specific_part_description}\"
 uri_scheme_specific_part_hierarchy=\"${uri_scheme_specific_part_hierarchy}\"
 uri_scheme_specific_part_name=\"${uri_scheme_specific_part_name}\"
 uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
-                                    for j in "${!uri_scheme_specific_part_reference[@]}"
-                                    do
-                                        printf '%s\n' "uri_scheme_specific_part_reference[$j]=${uri_scheme_specific_part_reference[$j]}"
-                                    done
-                                    for k in "${!uri_scheme_specific_part_tag[@]}"
-                                    do
-                                        printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
-                                    done
-                                } > "${datadir}/${euuid}/${eid}" && { echo "Data set has been modified." 1>&2 ; dir_stack+=($(dirs -l -p)) ; echo "Index is being rebuild..." 1>&2 ; rm -- "$file_tmp" ; return 0 ; }
-                            else
-                                rm -- "$file_tmp"
-                                { echo "Data set has not been modified." 1>&2 ; return 1 ; }
-                            fi
-                        }
-                    } || { echo "Tmp File has not been created." 1>&2 ; return 1 ; }
+                            for j in "${!uri_scheme_specific_part_reference[@]}"
+                            do
+                                printf '%s\n' "uri_scheme_specific_part_reference[$j]=${uri_scheme_specific_part_reference[$j]}"
+                            done
+                            for k in "${!uri_scheme_specific_part_tag[@]}"
+                            do
+                                printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
+                            done
+                        } > "${datadir}/${euuid}/${eid}"
+                        echo "Data set has been modified." 1>&2
+                        dir_stack+=($(dirs -l -p))
+                        return 0
+                    else
+                         { echo "Data set has not been modified." 1>&2 ; return 1 ; }
+                    fi
                 else
                     { echo "No matching." 1>&2 ; return 1 ; }
                 fi
             else
-                { echo "Search pattern '$i' is not allowed." 1>&2 ; return 1 ; }
+                { printf '%s\n' "Search pattern '$i' is not allowed." 1>&2 ; return 1 ; }
             fi
         done
     fi
@@ -1028,6 +1027,8 @@ __um_rebuild_index()
         dir= \
         i=
 
+    echo "Index is beeing rebuild..." 1>&2
+
     while read -r dir
     do
         declare -a \
@@ -1084,6 +1085,13 @@ __um_rebuild_index()
         done
         exec 3<&-
     done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${datadir}/.*" | sort | uniq)
+
+    if (($? == 0))
+    then
+        { echo "Done." 1>&2 ; return 0 ; }
+    else
+        { echo "Undone." 1>&2 ; return 1 ; }
+    fi
 }
 
 __um_random()
@@ -1231,7 +1239,7 @@ __um_main()
                 :)  printf '%s\n' "Option -${OPTARG} requires an argument." >&2
                     exit 1                                            ;;
                 \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
-                    exit 1                                            ;;
+                    exit 1
         esac
     done
     if (($# + 1 != $OPTIND))
@@ -1243,18 +1251,18 @@ __um_main()
 
     case $action in
         add)
-                __um_add "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
+                __um_add "${patterns[@]}" && __um_rebuild_index
                 unset -v dir_stack
                 ;;
         cloud)
                 __um_cloud "${patterns[0]}"
                 ;;
         delete)#
-                __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; echo "Done." >&2 ; }
+                __um_delete "${patterns[@]}" && { __um_delete_empty_dirs ; __um_rebuild_index ; }
                 unset -v dir_stack non_interactive
                 ;;
         edit)#
-                __um_edit "${patterns[@]}" && __um_rebuild_index && echo "Done." >&2
+                __um_edit "${patterns[@]}" && __um_rebuild_index
                 unset -v dir_stack
                 ;;
         help)
@@ -1273,7 +1281,7 @@ __um_main()
                     [[ ${patterns[$i]} == mod ]] && mod=mod && unset -v "patterns[$i]" && continue
                     [[ $mod == mod ]] && mods+=("${patterns[$i]}") && unset -v "patterns[$i]"
                 done
-                __um_modify && __um_rebuild_index && echo "Done." 1>&2
+                __um_modify && __um_rebuild_index
                 unset -v dir_stack non_interactive mod mods patterns i
                 ;;
         search)
