@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.4.2" ; }
+__um_version() { echo "0.2.4.3" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1258,9 +1258,11 @@ __um_main()
                 unset -v dir_stack
                 ;;
         help)
-                __um_help ;;
+                __um_help
+                ;;
         info)
-                __um_info ;;
+                __um_info
+                ;;
         list)
                 __um_list "${patterns[@]}"
                 unset -v build_uri
@@ -1279,7 +1281,10 @@ __um_main()
                 unset -v operators path_absolute
                 ;;
         version)
-                __um_version ;;
+                __um_version
+                ;;
+        *)
+                { echo "No subcommand has been specified." 1>&2 ; exit 1 ; }
     esac
 }
 
