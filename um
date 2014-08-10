@@ -1239,6 +1239,10 @@ do
 done
 if (($# + 1 != $OPTIND))
 then
+    for i in $@
+    do
+        echo $i
+    done
     { printf '%s\n' "Command line does not fit: $*." 1>&2 ; exit 1 ; }
 else
     shift $((OPTIND-1))
