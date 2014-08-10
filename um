@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.6.4" ; }
+__um_version() { echo "0.2.6.5" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1095,7 +1095,7 @@ __um_calculating_id()
         tail -n1)+1))"
 }
 
-__um_delete_empty_dirs() { find -H "${datadir}" -maxdepth 1 -type d -empty -delete ; }
+__um_delete_empty_dirs() { find -H "$datadir" -maxdepth 1 -type d -empty -delete ; }
 
 __um_check_args()
 {
