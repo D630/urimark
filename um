@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.6.3" ; }
+__um_version() { echo "0.2.6.4" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1089,9 +1089,7 @@ __um_random()
 
 __um_calculating_id()
 {
-    printf '%s\n' "$(($(find -H "${datadir}" -mindepth 2 -type f \
-            -name _index -print | \
-        xargs -r cut -d "|" -f2 | \
+    printf '%s\n' "$(($(cut -d "|" -f2 "${datadir}/_index" | \
         tr -d '"' | \
         sort -n | \
         tail -n1)+1))"
