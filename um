@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.6.1" ; }
+__um_version() { echo "0.2.6.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -995,7 +995,7 @@ __um_cloud()
                     return 1
     esac
 
-    find -H "$datadir" -mindepth 2 -type f -name _index -print | xargs -r cut -d'|' -f "$field" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
+    cut -d'|' -f "$field" "${datadir}/_index" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
 }
 
 __um_info()
