@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.6.0" ; }
+__um_version() { echo "0.2.6.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -965,16 +965,17 @@ __um_list()
     then
         if [[ $build_uri ]]
         then
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
+            sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#' "${datadir}/_index"
         else
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r cat
+            cat "${datadir}/_index"
         fi
     else
         if [[ $build_uri ]]
         then
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r fgrep -h -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') | sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
+            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${datadir}/_index" | \
+            sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
         else
-            find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r fgrep -h -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/')
+            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${datadir}/_index"
         fi
     fi
 }
