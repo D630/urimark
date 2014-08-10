@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.6.2" ; }
+__um_version() { echo "0.2.6.3" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1000,7 +1000,7 @@ __um_cloud()
 
 __um_info()
 {
-    printf '%s\n' "Authorities: $(find -H "${datadir}" -maxdepth 1 -mindepth 1 -type d ! -name _index | wc -l)" "URIs: $(find -H "${datadir}" -mindepth 2 -type f -name _index -print | xargs -r sed -n '$=')"
+    printf '%s\n' "Authorities: $(find -H "$datadir" -maxdepth 1 -mindepth 1 -type d ! -name _index | sed -n '$=')" "URIs: $(sed -n '$=' "${datadir}/_index")"
 }
 
 __um_rebuild_index()
