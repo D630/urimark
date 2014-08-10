@@ -155,10 +155,10 @@ __um_search()
     if (($# == 0))
     then
         operators[or]=1
-        find -H "${datadir}" -mindepth 2 -type f ! -name _index \
-                -printf '%P\n' | \
-            tr '/' ' ' \
-            >> "${tmpdir}/or1"
+        cut -d '|' -f1,2 "${datadir}/_index" | \
+            tr -d '"' | \
+            tr '|' ' ' \
+            > "${tmpdir}/or1"
     else
         for i
         do
