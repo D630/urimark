@@ -186,7 +186,7 @@ __um_search()
                 case $var in
                     uuid)
                             __um_search_parse_val
-                            find -H "${datadir}" -mindepth 2 -type f \
+                            find -H "$datadir" -mindepth 2 -type f \
                                     ! -name _index -regextype posix-egrep \
                                     ${not:+\!} -regex "^${datadir}/${pattern}/.*$" \
                                     -printf '%P\n' | \
