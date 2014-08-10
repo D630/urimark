@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.6.6" ; }
+__um_version() { echo "0.2.7.0" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -155,10 +155,10 @@ __um_search()
     if (($# == 0))
     then
         operators[or]=1
-        cut -d '|' -f1,2 "${datadir}/_index" | \
+        cut -d '|' -f1,2 "${URIMARK_DATA_DIR}/_index" | \
             tr -d '"' | \
             tr '|' ' ' \
-            > "${tmpdir}/or1"
+            > "${URIMARK_TMP_DIR}/or1"
     else
         for i
         do
@@ -186,22 +186,22 @@ __um_search()
                 case $var in
                     uuid)
                             __um_search_parse_val
-                            find -H "$datadir" -mindepth 2 -type f \
+                            find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
                                     ! -name _index -regextype posix-egrep \
-                                    ${not:+\!} -regex "^${datadir}/${pattern}/.*$" \
+                                    ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
                                     -printf '%P\n' | \
                                 tr '/' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     authority)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     md)
                             for j in ${val//,/ }
@@ -218,23 +218,23 @@ __um_search()
                                 __um_search_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$" \
-                                        "${datadir}/_index" | \
+                                        "${URIMARK_DATA_DIR}/_index" | \
                                     cut -d '|' -f1,2 | \
                                     tr -d '"' | \
                                     tr '|' ' ' \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) # ü
                             then
                                 pattern1=$(__um_search_binary ${utc[0]} 1 4)
                                 pattern2=$(__um_search_binary ${utc[1]} 2 4)
 
-                                cut -d '|' -f1,2,4 "${datadir}/_index" | \
+                                cut -d '|' -f1,2,4 "${URIMARK_DATA_DIR}/_index" | \
                                     tr -d '"' | \
                                     sort -t '|' -k3 -n | \
                                     sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" \
                                         -e "/|${pattern2}$/ p" | \
                                     tr '|' ' ' \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
                     bd)
@@ -252,94 +252,94 @@ __um_search()
                                 __um_search_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$" \
-                                        "${datadir}/_index" | \
+                                        "${URIMARK_DATA_DIR}/_index" | \
                                     cut -d '|' -f1,2 | \
                                     tr -d '"' | \
                                     tr '|' ' ' \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) #ü
                             then
                                 pattern1=$(__um_search_binary ${utc[0]} 1 3)
                                 pattern2=$(__um_search_binary ${utc[1]} 2 3)
 
-                                cut -d '|' -f1,2,3 "${datadir}/_index" | \
+                                cut -d '|' -f1,2,3 "${URIMARK_DATA_DIR}/_index" | \
                                     tr -d '"' | \
                                     sort -t '|' -k3 -n | \
                                     sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" \
                                         -e "/|${pattern2}$/ p" | \
                                     tr '|' ' ' \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
                     scheme)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     part)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     description)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     name)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     hierarchy)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     tag)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     reference)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     id)
                             if [[ $val =~ - ]]
@@ -362,7 +362,7 @@ __um_search()
                                 done
                                 while :
                                 do
-                                    if [[ $(tmpdir=${tmpdir}_ ; \
+                                    if [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; \
                                         __um_search id=^${ids[0]}$ 2>/dev/null && \
                                         __um_search_post 2>/dev/null) ]]
                                     then
@@ -373,7 +373,7 @@ __um_search()
                                 done
                                 while :
                                 do
-                                    if [[ $(tmpdir=${tmpdir}_ ; \
+                                    if [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; \
                                         __um_search id=^${ids[1]}$ 2>/dev/null && \
                                         __um_search_post 2>/dev/null) ]]
                                     then
@@ -382,13 +382,13 @@ __um_search()
                                         ids[1]=$((${ids[1]} - 1))
                                     fi
                                 done
-                                cut -d '|' -f1,2 "${datadir}/_index" | \
+                                cut -d '|' -f1,2 "${URIMARK_DATA_DIR}/_index" | \
                                     tr -d '"' | \
                                     tr '|' ' ' | \
                                     sort -k2 -n | \
                                     sed -n \
                                         -e "/^.* ${ids[0]}$/,/^.* ${ids[1]}$/${not:+!}p" \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif [[ $val =~ , ]]
                             then
                                 for id in ${val//,/ }
@@ -412,20 +412,20 @@ __um_search()
                                 pattern=${pattern%|}
                                 egrep ${not:+-v} \
                                     -e "^(\".*\"\|){1}\"(${pattern})\"\|(\".*\"(\||)){10}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                     cut -d '|' -f1,2 | \
                                     tr -d '"' | \
                                     tr '|' ' ' \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             else
                                 __um_search_parse_val
                                 egrep ${not:+-v} \
                                     -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                     cut -d '|' -f1,2 | \
                                     tr -d '"' | \
                                     tr '|' ' ' \
-                                    >> "${tmpdir}/${operator}${operators[$operator]}"
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
                     uri)
@@ -436,11 +436,11 @@ __um_search()
                             search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" \
-                                    "${datadir}/_index" | \
+                                    "${URIMARK_DATA_DIR}/_index" | \
                                 cut -d '|' -f1,2 | \
                                 tr -d '"' | \
                                 tr '|' ' ' \
-                                >> "${tmpdir}/${operator}${operators[$operator]}"
+                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                 esac
                 ids=()
@@ -470,7 +470,7 @@ __um_search_binary() #ü
     else
         e=1
     fi
-    array=($(cut -d '|' -f "$3" "${datadir}/_index" | \
+    array=($(cut -d '|' -f "$3" "${URIMARK_DATA_DIR}/_index" | \
         tr -d '"' | \
         sort -n))
     begin=0
@@ -505,14 +505,14 @@ __um_search_post()
 {
     if [[ ${operators[and]} -eq 1 ]]
     then
-        __um_search_post_and() { sort "${tmpdir}/and1" | uniq ; }
+        __um_search_post_and() { sort "${URIMARK_TMP_DIR}/and1" | uniq ; }
     elif [[ ${operators[and]} -gt 1 ]]
     then
         __um_search_post_and()
         {
             diff --unchanged-group-format='%=' \
                     --old-group-format='' --new-group-format='' \
-                    --changed-group-format='' --from-file ${tmpdir}/and* | \
+                    --changed-group-format='' --from-file ${URIMARK_TMP_DIR}/and* | \
                 sort | \
                 uniq
         }
@@ -522,30 +522,30 @@ __um_search_post()
     then
         __um_search_post_or()
         {
-            comm -12 <(sort "${tmpdir}/or1") <(__um_search_post_and) | \
+            comm -12 <(sort "${URIMARK_TMP_DIR}/or1") <(__um_search_post_and) | \
             sort | \
             uniq
         }
     elif ((${operators[or]}))
     then
-        __um_search_post_or() { sort "${tmpdir}/or1" | uniq ; }
+        __um_search_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
     fi
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
         if [[ $path_absolute ]]
         then
-            sed -n "s|^\(.*\) \(.*\)$|${datadir}\/\1\/\2|p" \
+            sed -n "s|^\(.*\) \(.*\)$|${URIMARK_DATA_DIR}\/\1\/\2|p" \
                 <(comm -23 <(__um_search_post_or) \
-                <(sort "${tmpdir}/not1" | uniq))
+                <(sort "${URIMARK_TMP_DIR}/not1" | uniq))
         else
             comm -23 <(__um_search_post_or) \
-                <(sort "${tmpdir}/not1" | uniq)
+                <(sort "${URIMARK_TMP_DIR}/not1" | uniq)
         fi
     else
         if [[ $path_absolute ]]
         then
-            sed -n "s|^\(.*\) \(.*\)$|${datadir}\/\1\/\2|p" \
+            sed -n "s|^\(.*\) \(.*\)$|${URIMARK_DATA_DIR}\/\1\/\2|p" \
                 <(__um_search_post_or)
         else
             __um_search_post_or
@@ -585,7 +585,7 @@ __um_add()
         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
         then
             { echo "Wrong scheme." 1>&2 ; return 1 ; }
-        elif [[ $(tmpdir=${tmpdir}_ ; __um_search uri="${uri}" 2>/dev/null && \
+        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_search uri="${uri}" 2>/dev/null && \
             __um_search_post 2>/dev/null) ]]
         then
             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
@@ -604,7 +604,7 @@ __um_add()
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." 1>&2 ; return 1 ; }
-                        elif [[ $(tmpdir=${tmpdir}_ ; __um_search uri="${uri}" 2>/dev/null && \
+                        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_search uri="${uri}" 2>/dev/null && \
                                 __um_search_post 2>/dev/null) ]]
                         then
                             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
@@ -650,11 +650,11 @@ __um_add()
     then
         uuid=$auuid
         pushd "$uuid" 1>/dev/null
-        printf '%s\n' "Authority has already been recorded at file://${datadir}/${auuid} ." 1>&2
+        printf '%s\n' "Authority has already been recorded at file://${URIMARK_DATA_DIR}/${auuid} ." 1>&2
         __um_add_print && succeeded=succeeded
     else
         uuid=$(__um_random 8)
-        mkdir -p "${datadir}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${datadir}/${uuid} ." 1>&2
+        mkdir -p "${URIMARK_DATA_DIR}/${uuid}" && printf '%s\n' "New authority has been recorded at file://${URIMARK_DATA_DIR}/${uuid} ." 1>&2
         pushd "$uuid" 1>/dev/null
         __um_add_print && succeeded=succeeded
     fi
@@ -675,7 +675,7 @@ __um_add_print()
             j= \
             k=
 
-    exec 3>"${datadir}/${uuid}/${id}"
+    exec 3>"${URIMARK_DATA_DIR}/${uuid}/${id}"
 
     printf '%s\n' "uuid=$uuid
 date_build=$bd
@@ -736,8 +736,8 @@ __um_edit()
     else
         while read -r euuid eid
         do
-            file_tmp=$(mktemp ${tmpdir}/urimark.XXXXXX)
-            cp -- "${datadir}/${euuid}/${eid}" "$file_tmp"
+            file_tmp=$(mktemp ${URIMARK_TMP_DIR}/urimark.XXXXXX)
+            cp -- "${URIMARK_DATA_DIR}/${euuid}/${eid}" "$file_tmp"
             pushd "$euuid" >/dev/null
             md5_pre=$(md5sum "$file_tmp")
             $editor "$file_tmp" </dev/tty
@@ -767,7 +767,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
                         do
                             printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
                         done
-                    } > "${datadir}/${euuid}/${eid}"
+                    } > "${URIMARK_DATA_DIR}/${euuid}/${eid}"
                     echo "Data set with id $eid has been modified." 1>&2
                 )
                 modification=modification
@@ -821,10 +821,10 @@ __um_delete()
             for d in "${deletion[@]}"
             do
                 pushd "${d% *}" >/dev/null
-                rm -- "${datadir}/${d% *}/${d#* }"
+                rm -- "${URIMARK_DATA_DIR}/${d% *}/${d#* }"
             done
             dir_stack=($(dirs -l -p))
-            rm -- "${datadir}/${d% *}/_index" 2>/dev/null
+            rm -- "${URIMARK_DATA_DIR}/${d% *}/_index" 2>/dev/null
             echo "Records have been deleted." 1>&2
         else
             { echo "No Record has been deleted." 1>&2 ; return 1 ; }
@@ -919,7 +919,7 @@ __um_modify()
         do
             if [[ $modify_all=modify_all  || $non_interactive=non_interactive ]]
             then
-                modification+=("${datadir}/${REPLY% *}/${REPLY#* }")
+                modification+=("${URIMARK_DATA_DIR}/${REPLY% *}/${REPLY#* }")
                 pushd "${REPLY% *}" >/dev/null
             else
                 printf 'UUID: %s\nID:   %s\n' $record
@@ -929,7 +929,7 @@ __um_modify()
                             modify_all=modify_all
                             ;&
                     y|yes)
-                            modification+=("${datadir}/${REPLY% *}/${REPLY#* }")
+                            modification+=("${URIMARK_DATA_DIR}/${REPLY% *}/${REPLY#* }")
                             pushd "${REPLY% *}" >/dev/null
                             ;;
                     n|no)
@@ -965,17 +965,17 @@ __um_list()
     then
         if [[ $build_uri ]]
         then
-            sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#' "${datadir}/_index"
+            sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#' "${URIMARK_DATA_DIR}/_index"
         else
-            cat "${datadir}/_index"
+            cat "${URIMARK_DATA_DIR}/_index"
         fi
     else
         if [[ $build_uri ]]
         then
-            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${datadir}/_index" | \
+            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${URIMARK_DATA_DIR}/_index" | \
             sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
         else
-            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${datadir}/_index"
+            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${URIMARK_DATA_DIR}/_index"
         fi
     fi
 }
@@ -995,12 +995,12 @@ __um_cloud()
                     return 1
     esac
 
-    cut -d'|' -f "$field" "${datadir}/_index" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
+    cut -d'|' -f "$field" "${URIMARK_DATA_DIR}/_index" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
 }
 
 __um_info()
 {
-    printf '%s\n' "Authorities: $(find -H "$datadir" -maxdepth 1 -mindepth 1 -type d ! -name _index | sed -n '$=')" "URIs: $(sed -n '$=' "${datadir}/_index")"
+    printf '%s\n' "Authorities: $(find -H "$URIMARK_DATA_DIR" -maxdepth 1 -mindepth 1 -type d ! -name _index | sed -n '$=')" "URIs: $(sed -n '$=' "${URIMARK_DATA_DIR}/_index")"
 }
 
 __um_rebuild_index()
@@ -1066,7 +1066,7 @@ __um_rebuild_index()
             printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" >&3
         done
         exec 3<&-
-    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${datadir}/.*" | sort | uniq)
+    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort | uniq)
 
     if (($? == 0))
     then
@@ -1076,8 +1076,8 @@ __um_rebuild_index()
     fi
 }
 
-__um_cat_indexes() { find -H "$datadir" -mindepth 2 -type f -name _index \
-    -print | xargs -r cat > "${datadir}/_index" ; }
+__um_cat_indexes() { find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f -name _index \
+    -print | xargs -r cat > "${URIMARK_DATA_DIR}/_index" ; }
 
 __um_random()
 {
@@ -1089,13 +1089,13 @@ __um_random()
 
 __um_calculating_id()
 {
-    printf '%s\n' "$(($(cut -d "|" -f2 "${datadir}/_index" | \
+    printf '%s\n' "$(($(cut -d "|" -f2 "${URIMARK_DATA_DIR}/_index" | \
         tr -d '"' | \
         sort -n | \
         tail -n1)+1))"
 }
 
-__um_delete_empty_dirs() { find -H "$datadir" -maxdepth 1 -type d -empty -delete ; }
+__um_delete_empty_dirs() { find -H "$URIMARK_DATA_DIR" -maxdepth 1 -type d -empty -delete ; }
 
 __um_check_args()
 {
@@ -1107,23 +1107,26 @@ __um_check_args()
             patterns+=("$o")
         done
     else
-        { printf '%s\n' "Option -${opt} requires an argument." >&2 ; exit 1 ; }
+        { printf '%s\n' "Option '-${opt}' requires an argument." 1>&2 ; exit 1 ; }
     fi
 }
 
 # -- MAIN.
 
-declare -r predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
-declare -r datadir=${URIMARK_DATA:-${predir_datadir}/urimark/data}
 declare -r \
-    CDPATH=$datadir \
-    editor=${X_TTY_EDITOR:-nano}
-declare tmpdir=${URIMARK_TMP:-"${TMPDIR:-/tmp}/urimark"}
+    predir_confile=${XDG_CONFIG_HOME:-${HOME}/.config} \
+    predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
+declare -r \
+    URIMARK_CONF_FILE=${URIMARK_CONF_FILE:-${predir_confile}/urimark/urimark.conf} \
+    URIMARK_DATA_DIR=${URIMARK_DATA_DIR:-${predir_datadir}/urimark/data}
+declare -r CDPATH=$URIMARK_DATA_DIR
+declare URIMARK_TMP_DIR=${URIMARK_TMP_DIR:-"${TMPDIR:-/tmp}/urimark"}
 
-trap "{ rm -fr "$tmpdir" "${tmpdir}_" ; exit 255 ; }" EXIT
+trap "{ rm -fr "$URIMARK_TMP_DIR" "${URIMARK_TMP_DIR}_" ; exit 255 ; }" EXIT
 
-[[ ! -e $datadir ]] && mkdir -p -- "$datadir"
-mkdir -p -- "$tmpdir" "${tmpdir}_"
+[[ ! -e ${URIMARK_CONF_FILE%/*} ]] && mkdir -p -- "${URIMARK_CONF_FILE%/*}"
+[[ ! -e $URIMARK_DATA_DIR ]] && mkdir -p -- "$URIMARK_DATA_DIR"
+mkdir -p -- "$URIMARK_TMP_DIR" "${URIMARK_TMP_DIR}_"
 
 declare \
     arg= \
@@ -1134,51 +1137,62 @@ for arg
 do
     arg=${arg#--}
     case $arg in
-        absolute-path)      args="${args}-P "                               ;;
-        add)                args="${args}-A "                               ;;
-        and)                args="${args}-a "                               ;;
-        "")                 args="${args}-- "                               ;;
-        authority=*)        args="${args}-Y ${arg#*=} "                     ;;
-        bd=*)               args="${args}-B ${arg#*=} "                     ;;
-        cloud=*)            args="${args}-c ${arg#*=} "                     ;;
-        delete)             args="${args}-d "                               ;;
-        description=*)      args="${args}-8 ${delim}${arg#*=}${delim} "     ;;
-        edit)               args="${args}-e "                               ;;
-        help)               args="${args}-h "                               ;;
-        hierarchy=*)        args="${args}-H ${arg#*=} "                     ;;
-        id=*)               args="${args}-I ${arg#*=} "                     ;;
-        info)               args="${args}-i "                               ;;
-        list)               args="${args}-l "                               ;;
-        md=*)               args="${args}-M ${arg#*=} "                     ;;
-        mod)                args="${args}-9 "                               ;;
-        modify)             args="${args}-m "                               ;;
-        name=*)             args="${args}-N ${delim}${arg#*=}${delim} "     ;;
-        non-interactive)    args="${args}-n "                               ;;
-        not)                args="${args}-! "                               ;;
-        or)                 args="${args}-o "                               ;;
-        part=*)             args="${args}-T ${delim}${arg#*=}${delim} "     ;;
-        print-uri)          args="${args}-u "                               ;;
-        reference=*)        args="${args}-5 ${delim}${arg#*=}${delim} "     ;;
-        reference+=*)       args="${args}-6 ${delim}${arg#*+=}${delim} "    ;;
-        reference-=*)       args="${args}-7 ${delim}${arg#*-=}${delim} "    ;;
-        scheme=*)           args="${args}-S ${arg#*=} "                     ;;
-        search)             args="${args}-s "                               ;;
-        tag=*)              args="${args}-2 ${delim}${arg#*=}${delim} "     ;;
-        tag+=*)             args="${args}-3 ${delim}${arg#*+=}${delim} "    ;;
-        tag-=*)             args="${args}-4 ${delim}${arg#*-=}${delim} "    ;;
-        uri=*)              args="${args}-1 ${delim}${arg#*=}${delim} "     ;;
-        uuid=*)             args="${args}-0 ${arg#*=} "                     ;;
-        version)            args="${args}-v "                               ;;
+        absolute-path)      args="${args}-P "                            ;;
+        add)                args="${args}-A "                            ;;
+        and)                args="${args}-a "                            ;;
+        authority=?*)       args="${args}-Y ${arg#*=} "                  ;;
+        bd=?*)              args="${args}-B ${arg#*=} "                  ;;
+        cloud=?*)           args="${args}-c ${arg#*=} "                  ;;
+        delete)             args="${args}-d "                            ;;
+        description=?*)     args="${args}-8 ${delim}${arg#*=}${delim} "  ;;
+        edit)               args="${args}-e "                            ;;
+        help)               args="${args}-h "                            ;;
+        hierarchy=?*)       args="${args}-H ${arg#*=} "                  ;;
+        id=?*)              args="${args}-I ${arg#*=} "                  ;;
+        info)               args="${args}-i "                            ;;
+        list)               args="${args}-l "                            ;;
+        md=?*)              args="${args}-M ${arg#*=} "                  ;;
+        mod)                args="${args}-9 "                            ;;
+        modify)             args="${args}-m "                            ;;
+        name=?*)            args="${args}-N ${delim}${arg#*=}${delim} "  ;;
+        non-interactive)    args="${args}-n "                            ;;
+        not)                args="${args}-! "                            ;;
+        or)                 args="${args}-o "                            ;;
+        part=?*)            args="${args}-T ${delim}${arg#*=}${delim} "  ;;
+        print-uri)          args="${args}-u "                            ;;
+        reference=?*)       args="${args}-5 ${delim}${arg#*=}${delim} "  ;;
+        reference+=?*)      args="${args}-6 ${delim}${arg#*+=}${delim} " ;;
+        reference-=?*)      args="${args}-7 ${delim}${arg#*-=}${delim} " ;;
+        scheme=?*)          args="${args}-S ${arg#*=} "                  ;;
+        search)             args="${args}-s "                            ;;
+        tag=?*)             args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
+        tag+=?*)            args="${args}-3 ${delim}${arg#*+=}${delim} " ;;
+        tag-=?*)            args="${args}-4 ${delim}${arg#*-=}${delim} " ;;
+        uri=?*)             args="${args}-1 ${delim}${arg#*=}${delim} "  ;;
+        uuid=?*)            args="${args}-0 ${arg#*=} "                  ;;
+        version)            args="${args}-v "                            ;;
+        authority=|\
+        bd=|\
+        cloud=|\
+        description=|\
+        hierarchy=|\
+        id=|\
+        md=|\
+        name=|\
+        part=|\
+        scheme=|\
+        uri=|\
+        uuid=)
+                            printf '%s\n' "Flag '${arg}' requires an argument." 1>&2
+                            exit                                         ;;
         *)                  if [[ ${arg:0:1} == - ]]
                             then
                                 args="${args}${arg} "
                             else
                                 args="${args}${delim}${arg}${delim} "
                             fi
-                            ;;
     esac
 done
-
 declare \
     action= \
     build_uri= \
@@ -1193,60 +1207,98 @@ declare -a \
     mods=() \
     patterns=()
 
+
 eval set -- "$args"
 while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
 do
     case $opt in
-            0)  __um_check_args "uuid=$OPTARG"                    ;;
-            1)  __um_check_args "uri=$OPTARG"                     ;;
-            2)  __um_check_args "tag=$OPTARG"                     ;;
-            3)  __um_check_args "tag+=$OPTARG"                    ;;
-            4)  __um_check_args "tag-=$OPTARG"                    ;;
-            5)  __um_check_args "reference=$OPTARG"               ;;
-            6)  __um_check_args "reference+=$OPTARG"              ;;
-            7)  __um_check_args "reference-=$OPTARG"              ;;
-            8)  __um_check_args "description=$OPTARG"             ;;
-            9)  patterns+=(mod)                                   ;;
-            A)  action=add                                        ;;
-            a)  patterns+=(and)                                   ;;
-            B)  __um_check_args "bd=$OPTARG"                      ;;
-            c)  action=cloud ; __um_check_args "$OPTARG"          ;;
-            d)  action=delete                                     ;;
-            e)  action=edit                                       ;;
-            h)  action=help                                       ;;
-            H)  __um_check_args "hierarchy=$OPTARG"               ;;
-            i)  action=info                                       ;;
-            I)  __um_check_args "id=$OPTARG"                      ;;
-            l)  action=list                                       ;;
-            m)  action=modify                                     ;;
-            M)  __um_check_args "md=$OPTARG"                      ;;
-            n)  non_interactive=non_interactive                   ;;
-            N)  __um_check_args "name=$OPTARG"                    ;;
-            o)  patterns+=(or)                                    ;;
-            !)  patterns+=(not)                                   ;;
-            P)  path_absolute=path_absolute                       ;;
-            s)  action=search                                     ;;
-            S)  __um_check_args "scheme=$OPTARG"                  ;;
-            T)  __um_check_args "part=$OPTARG"                    ;;
-            u)  build_uri=build_uri                               ;;
-            v)  action=version                                    ;;
-            Y)  __um_check_args "authority=$OPTARG"               ;;
-            :)  printf '%s\n' "Option -${OPTARG} requires an argument." >&2
-                exit 1                                            ;;
-            \?) printf '%s\n' "Unknown flag: -${OPTARG}." >&2
-                exit 1
+        0)  __um_check_args "uuid=$OPTARG"                    ;;
+        1)  __um_check_args "uri=$OPTARG"                     ;;
+        2)  __um_check_args "tag=$OPTARG"                     ;;
+        3)  __um_check_args "tag+=$OPTARG"                    ;;
+        4)  __um_check_args "tag-=$OPTARG"                    ;;
+        5)  __um_check_args "reference=$OPTARG"               ;;
+        6)  __um_check_args "reference+=$OPTARG"              ;;
+        7)  __um_check_args "reference-=$OPTARG"              ;;
+        8)  __um_check_args "description=$OPTARG"             ;;
+        9)  patterns+=(mod)                                   ;;
+        A)  action=add                                        ;;
+        a)  patterns+=(and)                                   ;;
+        B)  __um_check_args "bd=$OPTARG"                      ;;
+        c)  action=cloud ; __um_check_args "$OPTARG"          ;;
+        d)  action=delete                                     ;;
+        e)  action=edit                                       ;;
+        h)  action=help                                       ;;
+        H)  __um_check_args "hierarchy=$OPTARG"               ;;
+        i)  action=info                                       ;;
+        I)  __um_check_args "id=$OPTARG"                      ;;
+        l)  action=list                                       ;;
+        m)  action=modify                                     ;;
+        M)  __um_check_args "md=$OPTARG"                      ;;
+        n)  non_interactive=non_interactive                   ;;
+        N)  __um_check_args "name=$OPTARG"                    ;;
+        o)  patterns+=(or)                                    ;;
+        !)  patterns+=(not)                                   ;;
+        P)  path_absolute=path_absolute                       ;;
+        s)  action=search                                     ;;
+        S)  __um_check_args "scheme=$OPTARG"                  ;;
+        T)  __um_check_args "part=$OPTARG"                    ;;
+        u)  build_uri=build_uri                               ;;
+        v)  action=version                                    ;;
+        Y)  __um_check_args "authority=$OPTARG"               ;;
+        :)  printf '%s\n' "Option '-${OPTARG}' requires an argument." 1>&2
+            exit 1                                            ;;
+        \?) printf '%s\n' "Unknown flag: '-${OPTARG}'." 1>&2
+            exit 1
     esac
 done
-if (($# + 1 != $OPTIND))
-then
-    for i in $@
+
+declare \
+    editor= \
+    report_default=
+declare -A report
+
+[[ -f $URIMARK_CONF_FILE ]] &&
+{
+    while read -r
     do
-        echo $i
-    done
-    { printf '%s\n' "Command line does not fit: $*." 1>&2 ; exit 1 ; }
-else
-    shift $((OPTIND-1))
-fi
+        eval "$REPLY" || { source "$URIMARK_CONF_FILE" 1>&2 ; exit 1 ; }
+    done < "$URIMARK_CONF_FILE"
+}
+
+editor=${editor:-$EDITOR}
+report_default=${report_default:-um_default}
+
+declare report=
+
+while (($# > 0))
+do
+    case $1 in
+        -9|-!|-a|-A|-d|-e|-h|-i|-l|-m|-n|-o|-P|-s|-u|-v)
+            shift 1
+            ;;
+        -[0-8]|-B|-c|-H|-I|-M|-N|-S|-T|-Y)
+            shift 2
+            ;;
+        *)
+            if [[ ${report[${1} attribute]} && ${report[${1} layout]} ]]
+            then
+                report=$1
+                shift 1
+            else
+                { printf '%s\n' "Unknown parameter: '${1}'." 1>&2 ; exit 1 ; }
+            fi
+    esac
+done
+
+report=${report:-$report_default}
+[[ ! ${report[${report} attribute]} && ! ${report[${report} layout]} ]] &&
+{
+    report[um_default layout]=vertical
+    report[um_default attribute]=uuid,id
+}
+
+action=${action:-search}
 
 case $action in
     add)
