@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.1" ; }
+__um_version() { echo "0.2.7.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1122,7 +1122,7 @@ declare -r \
 declare -r CDPATH=$URIMARK_DATA_DIR
 declare URIMARK_TMP_DIR=${URIMARK_TMP_DIR:-"${TMPDIR:-/tmp}/urimark"}
 
-trap "{ rm -fr "$URIMARK_TMP_DIR" "${URIMARK_TMP_DIR}_" ; exit 255 ; }" EXIT
+trap "{ rm -fr -- "$URIMARK_TMP_DIR" "${URIMARK_TMP_DIR}_" ; exit 0 ; }" EXIT
 
 [[ ! -e ${URIMARK_CONF_FILE%/*} ]] && mkdir -p -- "${URIMARK_CONF_FILE%/*}"
 [[ ! -e $URIMARK_DATA_DIR ]] && mkdir -p -- "$URIMARK_DATA_DIR"
