@@ -16,7 +16,7 @@ SUBCOMMANDS
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
     -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -P,-S,-T,-u,-Y
+                                -S,-T,-Y
     -v, --version
 
     OPT                         ARG
@@ -40,10 +40,8 @@ SUBCOMMANDS
     -n, --non-interactive
     -!, --not
     -o, --or
-    -P, --absolute-path
     -S, --scheme=               <SCHEME>
     -T, --part=                 <PART>
-    -u, --print-uri
     -Y, --authority=            <AUTH>
 
 ARGUMENTS

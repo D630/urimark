@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.5" ; }
+__um_version() { echo "0.2.7.6" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-s|-v)' ; }
 
@@ -56,7 +56,7 @@ SUBCOMMANDS
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
     -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-u,-Y
+                                -S,-T,-Y
     -v, --version
 
     OPT                         ARG
@@ -82,7 +82,6 @@ SUBCOMMANDS
     -o, --or
     -S, --scheme=               <SCHEME>
     -T, --part=                 <PART>
-    -u, --print-uri
     -Y, --authority=            <AUTH>
 
 ARGUMENTS
@@ -1124,7 +1123,6 @@ done
 
 declare \
     action= \
-    build_uri= \
     i= \
     mod= \
     non_interactive= \
@@ -1137,7 +1135,7 @@ declare -a \
 
 
 eval set -- "$args"
-while getopts :sAaY:B:c:d8:eH:I:iM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
+while getopts :sAaY:B:c:d8:eH:I:iM:9mN:n!oT:5:6:7:S:2:3:4:0:1:hv opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1169,7 +1167,6 @@ do
         s)  action=search                                     ;;
         S)  __um_check_args "scheme=$OPTARG"                  ;;
         T)  __um_check_args "part=$OPTARG"                    ;;
-        u)  build_uri=build_uri                               ;;
         v)  action=version                                    ;;
         Y)  __um_check_args "authority=$OPTARG"               ;;
         :)  printf '%s\n' "Option '-${OPTARG}' requires an argument." 1>&2
@@ -1204,7 +1201,7 @@ declare report=
 while (($# > 0))
 do
     case $1 in
-        -9|-!|-a|-A|-d|-e|-h|-i|-m|-n|-o|-P|-s|-u|-v)
+        -9|-!|-a|-A|-d|-e|-h|-i|-m|-n|-o|-s|-v)
             shift 1
             ;;
         -[0-8]|-B|-c|-H|-I|-M|-N|-S|-T|-Y)
