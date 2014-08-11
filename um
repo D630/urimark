@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.4" ; }
+__um_version() { echo "0.2.7.5" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-s|-v)' ; }
 
@@ -56,7 +56,7 @@ SUBCOMMANDS
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
     -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -P,-S,-T,-u,-Y
+                                -S,-T,-u,-Y
     -v, --version
 
     OPT                         ARG
@@ -80,7 +80,6 @@ SUBCOMMANDS
     -n, --non-interactive
     -!, --not
     -o, --or
-    -P, --absolute-path
     -S, --scheme=               <SCHEME>
     -T, --part=                 <PART>
     -u, --print-uri
@@ -489,26 +488,13 @@ __um_search_post()
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
-        if [[ $path_absolute ]]
-        then
-            sed -n "s|^\(.*\) \(.*\)$|${URIMARK_DATA_DIR}\/\1\/\2|p" \
-                <(comm -23 <(__um_search_post_or) \
-                <(sort "${URIMARK_TMP_DIR}/not1" | uniq))
-        else
-            [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
-            eval "${report[${report} preprocess]} comm -23 <(__um_search_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
-            [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
-        fi
+        [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
+        eval "${report[${report} preprocess]} comm -23 <(__um_search_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
+        [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
     else
-        if [[ $path_absolute ]]
-        then
-            sed -n "s|^\(.*\) \(.*\)$|${URIMARK_DATA_DIR}\/\1\/\2|p" \
-                <(__um_search_post_or)
-        else
-            [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
-            eval "${report[${report} preprocess]} __um_search_post_or ${report[${report} postprocess]}"
-            [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
-        fi
+        [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
+        eval "${report[${report} preprocess]} __um_search_post_or ${report[${report} postprocess]}"
+        [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
     fi
 }
 
@@ -1075,7 +1061,6 @@ for arg
 do
     arg=${arg#--}
     case $arg in
-        absolute-path)      args="${args}-P "                            ;;
         add)                args="${args}-A "                            ;;
         and)                args="${args}-a "                            ;;
         authority=?*)       args="${args}-Y ${arg#*=} "                  ;;
@@ -1144,8 +1129,7 @@ declare \
     mod= \
     non_interactive= \
     opt= \
-    OPTIND=1 \
-    path_absolute=
+    OPTIND=1
 
 declare -a \
     mods=() \
@@ -1153,7 +1137,7 @@ declare -a \
 
 
 eval set -- "$args"
-while getopts :sPAaY:B:c:d8:eH:I:iM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
+while getopts :sAaY:B:c:d8:eH:I:iM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1182,7 +1166,6 @@ do
         N)  __um_check_args "name=$OPTARG"                    ;;
         o)  patterns+=(or)                                    ;;
         !)  patterns+=(not)                                   ;;
-        P)  path_absolute=path_absolute                       ;;
         s)  action=search                                     ;;
         S)  __um_check_args "scheme=$OPTARG"                  ;;
         T)  __um_check_args "part=$OPTARG"                    ;;
