@@ -1193,6 +1193,7 @@ do
                             fi
     esac
 done
+
 declare \
     action= \
     build_uri= \
@@ -1294,7 +1295,7 @@ done
 report=${report:-$report_default}
 [[ ! ${report[${report} attribute]} && ! ${report[${report} layout]} ]] &&
 {
-    report[um_default layout]=vertical
+    report[um_default layout]=verti
     report[um_default attribute]=uuid,id
 }
 
