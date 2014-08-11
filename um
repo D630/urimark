@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.3" ; }
+__um_version() { echo "0.2.7.4" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-s|-v)' ; }
 
@@ -184,6 +184,12 @@ __um_search()
                 case $var in
                     uuid)
                             __um_search_parse_val
+                            egrep ${not:+-v} \
+                                    -e "^\"${pattern}\"\|(.*)$" "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                            ;;
+                    uuid-hidden)
+                            __um_search_parse_val
                             find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
                                     ! -name _index -regextype posix-egrep \
                                     ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
@@ -195,45 +201,8 @@ __um_search()
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    md)
-                            for j in ${val//,/ }
-                            do
-                                if [[ $j =~ ^[[:digit:]]*$ ]]
-                                then
-                                    utc+=($j)
-                                else
-                                    utc+=($(date --utc --date "$j" +%s))
-                                fi
-                            done
-                            if ((${#utc[@]} == 1))
-                            then
-                                __um_search_parse_val
-                                egrep ${not:+-v} \
-                                        -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$" \
-                                        "${URIMARK_DATA_DIR}/_index" | \
-                                    cut -d '|' -f1,2 | \
-                                    tr -d '"' | \
-                                    tr '|' ' ' \
+                                    "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#utc[@]} == 2 )) # ü
-                            then
-                                pattern1=$(__um_search_binary ${utc[0]} 1 4)
-                                pattern2=$(__um_search_binary ${utc[1]} 2 4)
-
-                                cut -d '|' -f1,2,4 "${URIMARK_DATA_DIR}/_index" | \
-                                    tr -d '"' | \
-                                    sort -t '|' -k3 -n | \
-                                    sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" \
-                                        -e "/|${pattern2}$/ p" | \
-                                    tr '|' ' ' \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            fi
                             ;;
                     bd)
                             for j in ${val//,/ }
@@ -250,22 +219,44 @@ __um_search()
                                 __um_search_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$" \
-                                        "${URIMARK_DATA_DIR}/_index" | \
-                                    cut -d '|' -f1,2 | \
-                                    tr -d '"' | \
-                                    tr '|' ' ' \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                        "${URIMARK_DATA_DIR}/_index" \
+                                        >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) #ü
                             then
                                 pattern1=$(__um_search_binary ${utc[0]} 1 3)
                                 pattern2=$(__um_search_binary ${utc[1]} 2 3)
-
-                                cut -d '|' -f1,2,3 "${URIMARK_DATA_DIR}/_index" | \
-                                    tr -d '"' | \
-                                    sort -t '|' -k3 -n | \
-                                    sed -n -e "/|${pattern1}$/,/|${pattern2}$/ p" \
-                                        -e "/|${pattern2}$/ p" | \
-                                    tr '|' ' ' \
+                                sort -t '|' -k3 -n "${URIMARK_DATA_DIR}/_index" | \
+                                    sed -n -r \
+                                        -e "/^((\||)\"[^\"\|]*\"\|){2}\"${pattern1}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){2}\"${pattern2}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
+                                        -e "^((\||)\"[^\"\|]*\"\|){2}\"${pattern2}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/ p" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                            fi
+                            ;;
+                    md)
+                            for j in ${val//,/ }
+                            do
+                                if [[ $j =~ ^[[:digit:]]*$ ]]
+                                then
+                                    utc+=($j)
+                                else
+                                    utc+=($(date --utc --date "$j" +%s))
+                                fi
+                            done
+                            if ((${#utc[@]} == 1))
+                            then
+                                __um_search_parse_val
+                                egrep ${not:+-v} \
+                                        -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$" \
+                                        "${URIMARK_DATA_DIR}/_index" \
+                                        >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                            elif (( ${#utc[@]} == 2 )) # ü
+                            then
+                                pattern1=$(__um_search_binary ${utc[0]} 1 4)
+                                pattern2=$(__um_search_binary ${utc[1]} 2 4)
+                                sort -t '|' -k4 -n "${URIMARK_DATA_DIR}/_index" | \
+                                    sed -n -r \
+                                        -e "/^((\||)\"[^\"\|]*\"\|){3}\"${pattern1}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){3}\"${pattern2}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
+                                        -e "^((\||)\"[^\"\|]*\"\|){3}\"${pattern2}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/ p" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
@@ -273,71 +264,50 @@ __um_search()
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     part)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     description)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     name)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     hierarchy)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     tag)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     reference)
                             __um_search_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     id)
                             if [[ $val =~ - ]]
@@ -380,12 +350,9 @@ __um_search()
                                         ids[1]=$((${ids[1]} - 1))
                                     fi
                                 done
-                                cut -d '|' -f1,2 "${URIMARK_DATA_DIR}/_index" | \
-                                    tr -d '"' | \
-                                    tr '|' ' ' | \
-                                    sort -k2 -n | \
-                                    sed -n \
-                                        -e "/^.* ${ids[0]}$/,/^.* ${ids[1]}$/${not:+!}p" \
+                                sort -t '|' -k2 -n "${URIMARK_DATA_DIR}/_index" | \
+                                    sed -r -n \
+                                        -e "/^(\"[^\"\|]*\"\|){1}\"${ids[0]}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){1}\"${ids[1]}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$/${not:+!}p" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif [[ $val =~ , ]]
                             then
@@ -410,19 +377,13 @@ __um_search()
                                 pattern=${pattern%|}
                                 egrep ${not:+-v} \
                                     -e "^(\".*\"\|){1}\"(${pattern})\"\|(\".*\"(\||)){10}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                    cut -d '|' -f1,2 | \
-                                    tr -d '"' | \
-                                    tr '|' ' ' \
+                                    "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             else
                                 __um_search_parse_val
                                 egrep ${not:+-v} \
                                     -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                    cut -d '|' -f1,2 | \
-                                    tr -d '"' | \
-                                    tr '|' ' ' \
+                                    "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
@@ -434,11 +395,8 @@ __um_search()
                             search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" \
-                                    "${URIMARK_DATA_DIR}/_index" | \
-                                cut -d '|' -f1,2 | \
-                                tr -d '"' | \
-                                tr '|' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                                    "${URIMARK_DATA_DIR}/_index" \
+                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                 esac
                 ids=()
@@ -537,8 +495,9 @@ __um_search_post()
                 <(comm -23 <(__um_search_post_or) \
                 <(sort "${URIMARK_TMP_DIR}/not1" | uniq))
         else
-            comm -23 <(__um_search_post_or) \
-                <(sort "${URIMARK_TMP_DIR}/not1" | uniq)
+            [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
+            eval "${report[${report} preprocess]} comm -23 <(__um_search_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
+            [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
         fi
     else
         if [[ $path_absolute ]]
@@ -546,7 +505,9 @@ __um_search_post()
             sed -n "s|^\(.*\) \(.*\)$|${URIMARK_DATA_DIR}\/\1\/\2|p" \
                 <(__um_search_post_or)
         else
-            __um_search_post_or
+            [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
+            eval "${report[${report} preprocess]} __um_search_post_or ${report[${report} postprocess]}"
+            [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
         fi
     fi
 }
@@ -1242,14 +1203,18 @@ declare -A report
 
 [[ -f $URIMARK_CONF_FILE ]] &&
 {
-    while read -r
-    do
-        eval "$REPLY" || { source "$URIMARK_CONF_FILE" 1>&2 ; exit 1 ; }
-    done < "$URIMARK_CONF_FILE"
+    #~ while read -r
+    #~ do
+        #~ eval "$REPLY" || { source "$URIMARK_CONF_FILE" 1>&2 ; exit 1 ; }
+    #~ done < "$URIMARK_CONF_FILE"
+    source "$URIMARK_CONF_FILE"
 }
 
 editor=${editor:-$EDITOR}
-report_default=${report_default:-um_default}
+[[ ! ${report[${report_default} description]} ]] && report_default=um_default
+
+report[um_default description]="Builtin default report"
+report[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
 
 declare report=
 
@@ -1263,7 +1228,7 @@ do
             shift 2
             ;;
         *)
-            if [[ ${report[${1} attribute]} && ${report[${1} layout]} ]]
+            if [[ ${report[${1} description]} ]]
             then
                 report=$1
                 shift 1
@@ -1274,11 +1239,7 @@ do
 done
 
 report=${report:-$report_default}
-[[ ! ${report[${report} attribute]} && ! ${report[${report} layout]} ]] &&
-{
-    report[um_default layout]=verti
-    report[um_default attribute]=uuid,id
-}
+[[ ${report[${report} filter]} && ${#patterns[@]} -eq 0 ]] && patterns=(${report[${report} filter]})
 
 action=${action:-search}
 
