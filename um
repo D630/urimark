@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.2" ; }
+__um_version() { echo "0.2.7.3" ; }
 
-__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
+__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-s|-v)' ; }
 
 __um_help()
 {
@@ -53,8 +53,6 @@ SUBCOMMANDS
                                 -S,-T,-Y
     -h, --help
     -i, --info
-    -l, --list                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-u,-Y
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
     -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
@@ -959,27 +957,6 @@ __um_modify()
     fi
 }
 
-__um_list()
-{
-    if (($# == 0))
-    then
-        if [[ $build_uri ]]
-        then
-            sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#' "${URIMARK_DATA_DIR}/_index"
-        else
-            cat "${URIMARK_DATA_DIR}/_index"
-        fi
-    else
-        if [[ $build_uri ]]
-        then
-            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${URIMARK_DATA_DIR}/_index" | \
-            sed -r -e 's#^(\".*\"\|\".*\"\|\".*\"\|\".*\")\|\"(.*)\"\|\"(.*)\"\|\"(.*)\"\|(\".*\"\|\".*\"\|\".*\"\|\".*\"\|\".*\")#\1\|"\2://\3\4"\|\5#'
-        else
-            fgrep -f <(__um_search "$@" && __um_search_post | sed 's/ /\"|\"/') "${URIMARK_DATA_DIR}/_index"
-        fi
-    fi
-}
-
 __um_cloud()
 {
     declare field=
@@ -1150,7 +1127,6 @@ do
         hierarchy=?*)       args="${args}-H ${arg#*=} "                  ;;
         id=?*)              args="${args}-I ${arg#*=} "                  ;;
         info)               args="${args}-i "                            ;;
-        list)               args="${args}-l "                            ;;
         md=?*)              args="${args}-M ${arg#*=} "                  ;;
         mod)                args="${args}-9 "                            ;;
         modify)             args="${args}-m "                            ;;
@@ -1216,7 +1192,7 @@ declare -a \
 
 
 eval set -- "$args"
-while getopts :sPAaY:B:c:d8:eH:I:ilM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
+while getopts :sPAaY:B:c:d8:eH:I:iM:9mN:n!oT:u5:6:7:S:2:3:4:0:1:hv opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1239,7 +1215,6 @@ do
         H)  __um_check_args "hierarchy=$OPTARG"               ;;
         i)  action=info                                       ;;
         I)  __um_check_args "id=$OPTARG"                      ;;
-        l)  action=list                                       ;;
         m)  action=modify                                     ;;
         M)  __um_check_args "md=$OPTARG"                      ;;
         n)  non_interactive=non_interactive                   ;;
@@ -1281,7 +1256,7 @@ declare report=
 while (($# > 0))
 do
     case $1 in
-        -9|-!|-a|-A|-d|-e|-h|-i|-l|-m|-n|-o|-P|-s|-u|-v)
+        -9|-!|-a|-A|-d|-e|-h|-i|-m|-n|-o|-P|-s|-u|-v)
             shift 1
             ;;
         -[0-8]|-B|-c|-H|-I|-M|-N|-S|-T|-Y)
@@ -1334,9 +1309,6 @@ case $action in
             ;;
     info)
             __um_info
-            ;;
-    list)
-            __um_list "${patterns[@]}"
             ;;
     modify)
             for i in "${!patterns[@]}"

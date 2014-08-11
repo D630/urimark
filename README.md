@@ -1,5 +1,5 @@
 ```
-um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)
+um (-A|-c|-d|-e|-h|-i|-m|-s|-v)
 
 SUBCOMMANDS
 -----------
@@ -13,8 +13,6 @@ SUBCOMMANDS
                                 -S,-T,-Y
     -h, --help
     -i, --info
-    -l, --list                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-u,-Y
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
     -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
@@ -68,5 +66,4 @@ ARGUMENTS
     <UUID>*                     'uuid'
 
     *regextype: posix-egrep
-
 ```
