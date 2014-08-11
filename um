@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.0" ; }
+__um_version() { echo "0.2.7.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-l|-m|-s|-v)' ; }
 
@@ -1180,7 +1180,13 @@ do
         md=|\
         name=|\
         part=|\
+        reference=|\
+        reference-=|\
+        reference+=|\
         scheme=|\
+        tag=|\
+        tag-=|\
+        tag+=|\
         uri=|\
         uuid=)
                             printf '%s\n' "Flag '${arg}' requires an argument." 1>&2
