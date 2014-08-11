@@ -95,7 +95,7 @@ ARGUMENTS
     <NAME>*                     'string'
     <PART>*                     'string'
     <REF>*                      'int' or 'int,int'
-    <SCHEME>                    'http','https','ftp','ftps','dav','davs',
+    <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
                                 'gopher','webdav','webdavs
     <TAG>*                      'string' or 'string;string;string'
     <URI>                       'string'
