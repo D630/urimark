@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.6" ; }
+__um_version() { echo "0.2.7.7" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-s|-v)' ; }
 
@@ -485,16 +485,16 @@ __um_search_post()
         __um_search_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
     fi
 
+    [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
+
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
-        [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
         eval "${report[${report} preprocess]} comm -23 <(__um_search_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
-        [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
     else
-        [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
         eval "${report[${report} preprocess]} __um_search_post_or ${report[${report} postprocess]}"
-        [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
     fi
+
+    [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
 }
 
 __um_add()
@@ -588,7 +588,7 @@ __um_add()
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid < <(__um_search authority=^${authority}$ && \
+    read -r auuid aid < <(report=um_default ; __um_search authority=^${authority}$ && \
         __um_search_post)
     if [[ $auuid && $aid ]]
     then
@@ -718,7 +718,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
             else
                 echo "Data set with id $eid has not been modified." 1>&2
             fi
-        done < <(__um_search "$@" && __um_search_post)
+        done < <(report=um_default ; __um_search "$@" && __um_search_post)
         [[ $modification == modification ]] &&
         {
             dir_stack=($(dirs -l -p))
@@ -758,7 +758,7 @@ __um_delete()
                     *)      continue                    ;;
                 esac
             fi
-        done 3<&0 < <(__um_search "$@" && __um_search_post)
+        done 3<&0 < <(report=um_default ; __um_search "$@" && __um_search_post)
 
         if ((${#deletion[@]} != 0))
         then
@@ -888,7 +888,7 @@ __um_modify()
                             ;;
                 esac
             fi
-        done 3<&0 < <(__um_search "${patterns[@]}" && __um_search_post)
+        done 3<&0 < <(report=um_default ; __um_search "${patterns[@]}" && __um_search_post)
 
         if ((${#modification[@]} != 0))
         then
