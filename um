@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.7.7" ; }
+__um_version() { echo "0.2.8.0" ; }
 
-__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-s|-v)' ; }
+__um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-v)' ; }
 
 __um_help()
 {
@@ -55,8 +55,6 @@ SUBCOMMANDS
     -i, --info
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
-    -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-Y
     -v, --version
 
     OPT                         ARG
@@ -107,7 +105,7 @@ ARGUMENTS
 "
 }
 
-__um_search()
+__um_query()
 {
     declare \
         f= \
@@ -119,9 +117,9 @@ __um_search()
         pattern= \
         pattern1= \
         pattern2= \
-        search_uri_authority= \
-        search_uri_schemes= \
-        search_uri_schemes_specific_parts= \
+        query_uri_authority= \
+        query_uri_schemes= \
+        query_uri_schemes_specific_parts= \
         val= \
         var=
 
@@ -131,7 +129,7 @@ __um_search()
 
     declare -gA operators
 
-    __um_search_parse_val()
+    __um_query_parse_val()
     {
         if [[ $val =~ ^\^ ]]
         then
@@ -181,13 +179,13 @@ __um_search()
                 operators[$operator]=${operators[$operator]:-1}
                 case $var in
                     uuid)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^\"${pattern}\"\|(.*)$" "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     uuid-hidden)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
                                     ! -name _index -regextype posix-egrep \
                                     ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
@@ -196,7 +194,7 @@ __um_search()
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     authority)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
@@ -214,15 +212,15 @@ __um_search()
                             done
                             if ((${#utc[@]} == 1))
                             then
-                                __um_search_parse_val
+                                __um_query_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) #ü
                             then
-                                pattern1=$(__um_search_binary ${utc[0]} 1 3)
-                                pattern2=$(__um_search_binary ${utc[1]} 2 3)
+                                pattern1=$(__um_query_binary ${utc[0]} 1 3)
+                                pattern2=$(__um_query_binary ${utc[1]} 2 3)
                                 sort -t '|' -k3 -n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -n -r \
                                         -e "/^((\||)\"[^\"\|]*\"\|){2}\"${pattern1}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){2}\"${pattern2}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
@@ -242,15 +240,15 @@ __um_search()
                             done
                             if ((${#utc[@]} == 1))
                             then
-                                __um_search_parse_val
+                                __um_query_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) # ü
                             then
-                                pattern1=$(__um_search_binary ${utc[0]} 1 4)
-                                pattern2=$(__um_search_binary ${utc[1]} 2 4)
+                                pattern1=$(__um_query_binary ${utc[0]} 1 4)
+                                pattern2=$(__um_query_binary ${utc[1]} 2 4)
                                 sort -t '|' -k4 -n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -n -r \
                                         -e "/^((\||)\"[^\"\|]*\"\|){3}\"${pattern1}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){3}\"${pattern2}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
@@ -259,49 +257,49 @@ __um_search()
                             fi
                             ;;
                     scheme)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     part)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     description)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     name)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     hierarchy)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     tag)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     reference)
-                            __um_search_parse_val
+                            __um_query_parse_val
                             egrep ${not:+-v} \
                                     -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$" \
                                     "${URIMARK_DATA_DIR}/_index" \
@@ -329,8 +327,8 @@ __um_search()
                                 while :
                                 do
                                     if [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; \
-                                        __um_search id=^${ids[0]}$ 2>/dev/null && \
-                                        __um_search_post 2>/dev/null) ]]
+                                        __um_query id=^${ids[0]}$ 2>/dev/null && \
+                                        __um_query_post 2>/dev/null) ]]
                                     then
                                         break
                                     else
@@ -340,8 +338,8 @@ __um_search()
                                 while :
                                 do
                                     if [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; \
-                                        __um_search id=^${ids[1]}$ 2>/dev/null && \
-                                        __um_search_post 2>/dev/null) ]]
+                                        __um_query id=^${ids[1]}$ 2>/dev/null && \
+                                        __um_query_post 2>/dev/null) ]]
                                     then
                                         break
                                     else
@@ -378,7 +376,7 @@ __um_search()
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             else
-                                __um_search_parse_val
+                                __um_query_parse_val
                                 egrep ${not:+-v} \
                                     -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
@@ -386,13 +384,13 @@ __um_search()
                             fi
                             ;;
                     uri)
-                            search_uri_schemes=${val%%:*}
-                            IFS='/' read -r search_uri_authority \
-                                search_uri_schemes_specific_parts \
+                            query_uri_schemes=${val%%:*}
+                            IFS='/' read -r query_uri_authority \
+                                query_uri_schemes_specific_parts \
                                 <<< "${val##*://}"
-                            search_uri_schemes_specific_parts=/${search_uri_schemes_specific_parts}
+                            query_uri_schemes_specific_parts=/${query_uri_schemes_specific_parts}
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){4}\"${search_uri_schemes}\"\|\"${search_uri_authority}\"\|\"${search_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" \
+                                    -e "^(\".*\"\|){4}\"${query_uri_schemes}\"\|\"${query_uri_authority}\"\|\"${query_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
@@ -405,7 +403,7 @@ __um_search()
     fi
 }
 
-__um_search_binary() #ü
+__um_query_binary() #ü
 {
     declare \
             b= \
@@ -455,14 +453,14 @@ __um_search_binary() #ü
     printf '%s\n' "${array[middle]}"
 }
 
-__um_search_post()
+__um_query_post()
 {
     if [[ ${operators[and]} -eq 1 ]]
     then
-        __um_search_post_and() { sort "${URIMARK_TMP_DIR}/and1" | uniq ; }
+        __um_query_post_and() { sort "${URIMARK_TMP_DIR}/and1" | uniq ; }
     elif [[ ${operators[and]} -gt 1 ]]
     then
-        __um_search_post_and()
+        __um_query_post_and()
         {
             diff --unchanged-group-format='%=' \
                     --old-group-format='' --new-group-format='' \
@@ -474,24 +472,24 @@ __um_search_post()
 
     if [[ ${operators[or]} && ${operators[and]} ]]
     then
-        __um_search_post_or()
+        __um_query_post_or()
         {
-            comm -12 <(sort "${URIMARK_TMP_DIR}/or1") <(__um_search_post_and) | \
+            comm -12 <(sort "${URIMARK_TMP_DIR}/or1") <(__um_query_post_and) | \
             sort | \
             uniq
         }
     elif ((${operators[or]}))
     then
-        __um_search_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
+        __um_query_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
     fi
 
     [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
-        eval "${report[${report} preprocess]} comm -23 <(__um_search_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
+        eval "${report[${report} preprocess]} comm -23 <(__um_query_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
     else
-        eval "${report[${report} preprocess]} __um_search_post_or ${report[${report} postprocess]}"
+        eval "${report[${report} preprocess]} __um_query_post_or ${report[${report} postprocess]}"
     fi
 
     [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
@@ -529,8 +527,8 @@ __um_add()
         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
         then
             { echo "Wrong scheme." 1>&2 ; return 1 ; }
-        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_search uri="${uri}" 2>/dev/null && \
-            __um_search_post 2>/dev/null) ]]
+        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri}" 2>/dev/null && \
+            __um_query_post 2>/dev/null) ]]
         then
             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
         fi
@@ -548,8 +546,8 @@ __um_add()
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." 1>&2 ; return 1 ; }
-                        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_search uri="${uri}" 2>/dev/null && \
-                                __um_search_post 2>/dev/null) ]]
+                        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri}" 2>/dev/null && \
+                                __um_query_post 2>/dev/null) ]]
                         then
                             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
                         fi
@@ -588,8 +586,8 @@ __um_add()
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid < <(report=um_default ; __um_search authority=^${authority}$ && \
-        __um_search_post)
+    read -r auuid aid < <(report=um_default ; __um_query authority=^${authority}$ && \
+        __um_query_post)
     if [[ $auuid && $aid ]]
     then
         uuid=$auuid
@@ -718,7 +716,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
             else
                 echo "Data set with id $eid has not been modified." 1>&2
             fi
-        done < <(report=um_default ; __um_search "$@" && __um_search_post)
+        done < <(report=um_default ; __um_query "$@" && __um_query_post)
         [[ $modification == modification ]] &&
         {
             dir_stack=($(dirs -l -p))
@@ -758,7 +756,7 @@ __um_delete()
                     *)      continue                    ;;
                 esac
             fi
-        done 3<&0 < <(report=um_default ; __um_search "$@" && __um_search_post)
+        done 3<&0 < <(report=um_default ; __um_query "$@" && __um_query_post)
 
         if ((${#deletion[@]} != 0))
         then
@@ -888,7 +886,7 @@ __um_modify()
                             ;;
                 esac
             fi
-        done 3<&0 < <(report=um_default ; __um_search "${patterns[@]}" && __um_search_post)
+        done 3<&0 < <(report=um_default ; __um_query "${patterns[@]}" && __um_query_post)
 
         if ((${#modification[@]} != 0))
         then
@@ -1085,7 +1083,6 @@ do
         reference+=?*)      args="${args}-6 ${delim}${arg#*+=}${delim} " ;;
         reference-=?*)      args="${args}-7 ${delim}${arg#*-=}${delim} " ;;
         scheme=?*)          args="${args}-S ${arg#*=} "                  ;;
-        search)             args="${args}-s "                            ;;
         tag=?*)             args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
         tag+=?*)            args="${args}-3 ${delim}${arg#*+=}${delim} " ;;
         tag-=?*)            args="${args}-4 ${delim}${arg#*-=}${delim} " ;;
@@ -1135,7 +1132,7 @@ declare -a \
 
 
 eval set -- "$args"
-while getopts :sAaY:B:c:d8:eH:I:iM:9mN:n!oT:5:6:7:S:2:3:4:0:1:hv opt
+while getopts :AaY:B:c:d8:eH:I:iM:9mN:n!oT:5:6:7:S:2:3:4:0:1:hv opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1164,7 +1161,6 @@ do
         N)  __um_check_args "name=$OPTARG"                    ;;
         o)  patterns+=(or)                                    ;;
         !)  patterns+=(not)                                   ;;
-        s)  action=search                                     ;;
         S)  __um_check_args "scheme=$OPTARG"                  ;;
         T)  __um_check_args "part=$OPTARG"                    ;;
         v)  action=version                                    ;;
@@ -1201,7 +1197,7 @@ declare report=
 while (($# > 0))
 do
     case $1 in
-        -9|-!|-a|-A|-d|-e|-h|-i|-m|-n|-o|-s|-v)
+        -9|-!|-a|-A|-d|-e|-h|-i|-m|-n|-o|-v)
             shift 1
             ;;
         -[0-8]|-B|-c|-H|-I|-M|-N|-S|-T|-Y)
@@ -1220,8 +1216,6 @@ done
 
 report=${report:-$report_default}
 [[ ${report[${report} filter]} && ${#patterns[@]} -eq 0 ]] && patterns=(${report[${report} filter]})
-
-action=${action:-search}
 
 case $action in
     add)
@@ -1268,12 +1262,15 @@ case $action in
                 __um_cat_indexes
             }
             ;;
-    search)
-            __um_search "${patterns[@]}" && __um_search_post
-            ;;
     version)
             __um_version
             ;;
     *)
-            { echo "No subcommand has been specified." 1>&2 ; exit 1 ; }
+            if [[ ! $action ]]
+            then
+                action=query
+                __um_query "${patterns[@]}" && __um_query_post
+            else
+                { echo "No subcommand has been specified." 1>&2 ; exit 1 ; }
+            fi
 esac

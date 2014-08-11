@@ -1,5 +1,5 @@
 ```
-um (-A|-c|-d|-e|-h|-i|-m|-s|-v)
+um (-A|-c|-d|-e|-h|-i|-m|-v)
 
 SUBCOMMANDS
 -----------
@@ -15,8 +15,6 @@ SUBCOMMANDS
     -i, --info
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
-    -s, --search                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-Y
     -v, --version
 
     OPT                         ARG
