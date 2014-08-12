@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.0" ; }
+__um_version() { echo "0.2.8.1" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-v)' ; }
 
@@ -196,7 +196,7 @@ __um_query()
                     authority)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){5}\"${pattern}\"\|(\".*\"(\||)){6}$" \
+                                    -e "^(\"[^\"\|]*\"\|){5}\"${pattern}\"\|(\"[^\"\|]*\"\|){5}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
@@ -214,7 +214,7 @@ __um_query()
                             then
                                 __um_query_parse_val
                                 egrep ${not:+-v} \
-                                        -e "^(\".*\"\|){2}\"${pattern}\"\|(\".*\"(\||)){9}$" \
+                                        -e "^(\"[^\"\|]*\"\|){2}\"${pattern}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) #ü
@@ -242,7 +242,7 @@ __um_query()
                             then
                                 __um_query_parse_val
                                 egrep ${not:+-v} \
-                                        -e "^(\".*\"\|){3}\"${pattern}\"\|(\".*\"(\||)){8}$" \
+                                        -e "^(\"[^\"\|]*\"\|){3}\"${pattern}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#utc[@]} == 2 )) # ü
@@ -259,49 +259,49 @@ __um_query()
                     scheme)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){4}\"${pattern}\"\|(\".*\"(\||)){7}$" \
+                                    -e "^(\"[^\"\|]*\"\|){4}\"${pattern}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     part)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){6}\"${pattern}\"\|(\".*\"(\||)){5}$" \
+                                    -e "^(\"[^\"\|]*\"\|){6}\"${pattern}\"\|(\"[^\"\|]*\"\|){5}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     description)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){8}\"${pattern}\"\|(\".*\"(\||)){3}$" \
+                                    -e "^(\"[^\"\|]*\"\|){8}\"${pattern}\"\|(\"[^\"\|]*\"\|){3}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     name)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){7}\"${pattern}\"\|(\".*\"(\||)){4}$" \
+                                    -e "^(\"[^\"\|]*\"\|){7}\"${pattern}\"\|(\"[^\"\|]*\"\|){4}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     hierarchy)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){9}\"${pattern}\"\|(\".*\"(\||)){2}$" \
+                                    -e "^(\"[^\"\|]*\"\|){9}\"${pattern}\"\|(\"[^\"\|]*\"\|){2}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     tag)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){10}\"(.*${pattern}.*)\"(\|.*)$" \
+                                    -e "^(\"[^\"\|]*\"\|){10}\"(.*${pattern}.*)\"\(\|\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     reference)
                             __um_query_parse_val
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){11}\"(.*${pattern}.*)\"$" \
+                                    -e "^(\"[^\"\|]*\"\|){11}\"(.*${pattern}.*)\"$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
@@ -372,13 +372,13 @@ __um_query()
                                 printf -v pattern '%s|' ${ids[*]}
                                 pattern=${pattern%|}
                                 egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){1}\"(${pattern})\"\|(\".*\"(\||)){10}$" \
+                                    -e "^(\"[^\"\|]*\"\|){1}\"(${pattern})\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             else
                                 __um_query_parse_val
                                 egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){1}\"${pattern}\"\|(\".*\"(\||)){10}$" \
+                                    -e "^(\"[^\"\|]*\"\|){1}\"${pattern}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
@@ -390,7 +390,7 @@ __um_query()
                                 <<< "${val##*://}"
                             query_uri_schemes_specific_parts=/${query_uri_schemes_specific_parts}
                             egrep ${not:+-v} \
-                                    -e "^(\".*\"\|){4}\"${query_uri_schemes}\"\|\"${query_uri_authority}\"\|\"${query_uri_schemes_specific_parts}\"\|(\".*\"(\||)){5}$" \
+                                    -e "^(\"[^\"\|]*\"\|){4}\"${query_uri_schemes}\"\|\"${query_uri_authority}\"\|\"${query_uri_schemes_specific_parts}\"\|(\"[^\"\|]*\"\|){4}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
@@ -541,7 +541,7 @@ __um_add()
         for i
         do
             case $i in
-                uri=*)
+                uri=?*)
                         uri=${i#*=}
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
@@ -552,19 +552,19 @@ __um_add()
                             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
                         fi
                         ;;
-                name=*)
+                name=?*)
                         name=${i#*=}
                         ;;
-                description=*)
+                description=?*)
                         description=${i#*=}
                         ;;
-                hierarchy=*)
+                hierarchy=?*)
                         hierarchy=${i#*=}
                         ;;
-                tag=*)
+                tag=?*)
                         IFS=';' read -r -a tags <<< "${i#*=}"
                         ;;
-                reference=*)
+                reference=?*)
                         IFS=';' read -r -a references <<< "${i#*=}"
                         ;;
             esac
@@ -605,7 +605,6 @@ __um_add()
     then
         printf '%s\n' "New URI with id ${id} has been recorded." 1>&2
         dir_stack=($(dirs -l -p))
-        echo "Index is being rebuild..." 1>&2
     else
          { printf '%s\n' "URI has not been recorded." 1>&2 ; return 1 ; }
     fi
@@ -766,7 +765,6 @@ __um_delete()
                 rm -- "${URIMARK_DATA_DIR}/${d% *}/${d#* }"
             done
             dir_stack=($(dirs -l -p))
-            rm -- "${URIMARK_DATA_DIR}/${d% *}/_index" 2>/dev/null
             echo "Records have been deleted." 1>&2
         else
             { echo "No Record has been deleted." 1>&2 ; return 1 ; }
@@ -801,53 +799,53 @@ __um_modify()
         for i in "${!mods[@]}"
         do
             case ${mods[i]} in
-                authority=*)
+                authority=?*)
                         mods[i]="-e s|^uri_authority=.*$|uri_authority=\"${mods[i]#*=}\"|"
                         ;;
-                scheme=*)
+                scheme=?*)
                         mods[i]="-e s|^uri_scheme=.*$|uri_scheme=\"${mods[i]#*=}\"|"
                         ;;
-                part=*)
+                part=?*)
                         mods[i]="-e s|^uri_scheme_specific_part=.*$|uri_scheme_specific_part=\"${mods[i]#*=}\"|"
                         ;;
-                name=*)
+                name=?*)
                         mods[i]="-e s|^uri_scheme_specific_part_name=.*$|uri_scheme_specific_part_name=\"${mods[i]#*=}\"|"
                         ;;
-                description=*)
+                description=?*)
                         mods[i]="-e s|^uri_scheme_specific_part_description=.*$|uri_scheme_specific_part_description=\"${mods[i]#*=}\"|"
                         ;;
-                hierarchy=*)
+                hierarchy=?*)
                         mods[i]="-e s|^uri_scheme_specific_part_hierarchy=.*$|uri_scheme_specific_part_hierarchy=\"${mods[i]#*=}\"|"
                         ;;
-                tag=*)
+                tag=?*)
                         for j in "${patterns[@]}"
                         do
-                            [[ $j == tag=* ]] && tags+=("${j#*=}")
+                            [[ $j == tag=?* ]] && tags+=("${j#*=}")
                         done
                         printf -v tag '%s|' "${tags[@]//^/}"
                         tag=${tag//$/}
                         mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"(${tag%|*})\"$|\1\"${mods[i]#*=}\"|"
                         ;;
-                tag-=*)
+                tag-=?*)
                         mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*=}\"$/d"
                         ;;
-                tag+=*)
+                tag+=?*)
                         index=$(__um_random 4)
                         mods[i]="-e $ i uri_scheme_specific_part_tag[${index}]=\"${mods[i]#*=}\""
                         ;;
-                reference=*)
+                reference=?*)
                         for k in "${patterns[@]}"
                         do
-                            [[ $k == reference=* ]] && references+=("${k#*=}")
+                            [[ $k == reference=?* ]] && references+=("${k#*=}")
                         done
                         printf -v ref '%s|' "${references[@]//^/}"
                         ref=${ref//$/}
                         mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)(${ref%|*})$|\1${mods[i]#*=}|"
                         ;;
-                reference-=*)
+                reference-=?*)
                         mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*=}$/d"
                         ;;
-                reference+=*)
+                reference+=?*)
                         index=$(__um_random 4)
                         mods[i]="-e $ i uri_scheme_specific_part_reference[${index}]=${mods[i]#*=}"
                         ;;
