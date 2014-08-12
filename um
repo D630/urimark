@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.1" ; }
+__um_version() { echo "0.2.8.2" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-v)' ; }
 
@@ -580,14 +580,12 @@ __um_add()
     bd=$date
     md=$date
     id=$(__um_calculating_id)
-    id=${id:-1}
-
     scheme=${uri%%:*}
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid < <(report=um_default ; __um_query authority=^${authority}$ && \
-        __um_query_post)
+    read -r auuid aid < <(report=um_default ; __um_query authority=^${authority}$ 2>/dev/null && \
+        __um_query_post 2>/dev/null)
     if [[ $auuid && $aid ]]
     then
         uuid=$auuid
@@ -1008,10 +1006,20 @@ __um_random()
 
 __um_calculating_id()
 {
-    printf '%s\n' "$(($(cut -d "|" -f2 "${URIMARK_DATA_DIR}/_index" | \
-        tr -d '"' | \
-        sort -n | \
-        tail -n1)+1))"
+    __um_calculating_id_print()
+    {
+        cut -d '|' -f2 "${URIMARK_DATA_DIR}/_index" | \
+        tr -d '\"' | \
+        sort -n
+    }
+
+    if [[ ! -e ${URIMARK_DATA_DIR}/_index ]]
+    then
+        echo 1
+    else
+        declare next_id=$(($(__um_calculating_id_print | tail -n1) + 1))
+        comm -23 <(eval "printf '%s\n' {1..${next_id}}") <(__um_calculating_id_print) | head -n1
+    fi
 }
 
 __um_delete_empty_dirs() { find -H "$URIMARK_DATA_DIR" -maxdepth 1 -type d -empty -delete ; }
