@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.2" ; }
+__um_version() { echo "0.2.8.3" ; }
 
 __um_usage() { printf 'um (-A|-c|-d|-e|-h|-i|-m|-v)' ; }
 
@@ -574,8 +574,8 @@ __um_add()
 
     date=$(date --utc --date now +%s)
 
-    ((${#tags[@]} == 0)) && tags[0]=null
-    ((${#references[@]} == 0)) && references[0]=null
+    ((${#tags[@]} == 0)) && tags[0]=$tag_default
+    ((${#references[@]} == 0)) && references[0]=$reference_default
 
     bd=$date
     md=$date
@@ -622,9 +622,9 @@ date_modification=$md
 uri_authority=\"${authority}\"
 uri_scheme=\"${scheme}\"
 uri_scheme_specific_part=\"${part}\"
-uri_scheme_specific_part_description=\"${description:-null}\"
-uri_scheme_specific_part_hierarchy=\"${hierarchy:-null}\"
-uri_scheme_specific_part_name=\"${name:-null}\"
+uri_scheme_specific_part_description=\"${description:-$description_default}\"
+uri_scheme_specific_part_hierarchy=\"${hierarchy:-$hierarchy_default}\"
+uri_scheme_specific_part_name=\"${name:-$name_default}\"
 uri_scheme_specific_part_id=$id" >&3
 
     for j in "${!references[@]}"
@@ -1194,6 +1194,11 @@ declare -A report
 
 editor=${editor:-$EDITOR}
 [[ ! ${report[${report_default} description]} ]] && report_default=um_default
+tag_default=${tag_default:-null}
+reference_default=${reference_default:-null}
+description_default=${description_default:-null}
+hierarchy_default=${hierarchy_default:-null}
+name_default=${name_default:-null}
 
 report[um_default description]="Builtin default report"
 report[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
