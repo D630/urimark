@@ -1,12 +1,11 @@
 ```
-um (-A|-c|-d|-e|-h|-m|-v)
+um (-A|-d|-e|-h|-m|-v)
 
 SUBCOMMANDS
 -----------
     ACTION                      OPT
     ------                      ---
     -A, --add                   -1,-2,-5,-8,-H,-N
-    -c, --cloud=<CFIELD>
     -d, --delete                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
                                 -o,-S,-T,-Y
     -e, --edit                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
@@ -45,8 +44,6 @@ ARGUMENTS
 ---------
     <AUTH>*                     'string'
     <BD>*                       'date' or 'date,date'
-    <CFIELD>                    'scheme', 'authority', 'part',
-                                'hierarchy', 'tag' or 'reference'
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi)

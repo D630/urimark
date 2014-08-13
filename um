@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.4" ; }
+__um_version() { echo "0.2.8.5" ; }
 
-__um_usage() { printf 'um (-A|-c|-d|-e|-h|-m|-v)' ; }
+__um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
 __um_help()
 {
@@ -46,7 +46,6 @@ SUBCOMMANDS
     ACTION                      OPT
     ------                      ---
     -A, --add                   -1,-2,-5,-8,-H,-N
-    -c, --cloud=<CFIELD>
     -d, --delete                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
                                 -o,-S,-T,-Y
     -e, --edit                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
@@ -85,8 +84,6 @@ ARGUMENTS
 ---------
     <AUTH>*                     'string'
     <BD>*                       'date' or 'date,date'
-    <CFIELD>                    'scheme', 'authority', 'part',
-                                'hierarchy', 'tag' or 'reference'
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi)
@@ -896,24 +893,6 @@ __um_modify()
     fi
 }
 
-__um_cloud()
-{
-    declare field=
-
-    case ${1#-} in
-        authority)  field=6                                           ;;
-        hierarchy)  field=10                                          ;;
-        part)       field=7                                           ;;
-        reference)  field=12                                          ;;
-        scheme)     field=5                                           ;;
-        tag)        field=11                                          ;;
-        *)          echo "We need a suitable argument." 1>&2
-                    return 1
-    esac
-
-    cut -d'|' -f "$field" "${URIMARK_DATA_DIR}/_index" | sed 's/"//g;s/;/\n/g' | sort | uniq -c | sort -nr
-}
-
 __um_rebuild_index()
 {
     declare \
@@ -1062,7 +1041,6 @@ do
         and)                args="${args}-a "                            ;;
         authority=?*)       args="${args}-Y ${arg#*=} "                  ;;
         bd=?*)              args="${args}-B ${arg#*=} "                  ;;
-        cloud=?*)           args="${args}-c ${arg#*=} "                  ;;
         delete)             args="${args}-d "                            ;;
         description=?*)     args="${args}-8 ${delim}${arg#*=}${delim} "  ;;
         edit)               args="${args}-e "                            ;;
@@ -1131,7 +1109,7 @@ declare -a \
 
 
 eval set -- "$args"
-while getopts :AaY:B:c:d8:eH:I:M:9mN:n!oT:5:6:7:S:2:3:4:0:1:hv opt
+while getopts :AaY:B:d8:eH:I:M:9mN:n!oT:5:6:7:S:2:3:4:0:1:hv opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1147,7 +1125,6 @@ do
         A)  action=add                                        ;;
         a)  patterns+=(and)                                   ;;
         B)  __um_check_args "bd=$OPTARG"                      ;;
-        c)  action=cloud ; __um_check_args "$OPTARG"          ;;
         d)  action=delete                                     ;;
         e)  action=edit                                       ;;
         h)  action=help                                       ;;
@@ -1203,7 +1180,7 @@ do
         -9|-!|-a|-A|-d|-e|-h|-m|-n|-o|-v)
             shift 1
             ;;
-        -[0-8]|-B|-c|-H|-I|-M|-N|-S|-T|-Y)
+        -[0-8]|-B|-H|-I|-M|-N|-S|-T|-Y)
             shift 2
             ;;
         *)
@@ -1227,9 +1204,6 @@ case $action in
                 __um_rebuild_index
                 __um_cat_indexes
             }
-            ;;
-    cloud)
-            __um_cloud "${patterns[0]}"
             ;;
     delete)
             __um_delete "${patterns[@]}" &&
