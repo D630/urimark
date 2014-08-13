@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.5" ; }
+__um_version() { echo "0.2.8.6" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -479,16 +479,16 @@ __um_query_post()
         __um_query_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
     fi
 
-    [[ ${report[${report} header]} ]] && eval "${report[$report header]}"
+    [[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
-        eval "${report[${report} preprocess]} comm -23 <(__um_query_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${report[${report} postprocess]}"
+        eval "${hook[${hook_choosen} preprocess]} comm -23 <(__um_query_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${hook[${hook_choosen} postprocess]}"
     else
-        eval "${report[${report} preprocess]} __um_query_post_or ${report[${report} postprocess]}"
+        eval "${hook[${hook_choosen} preprocess]} __um_query_post_or ${hook[${hook_choosen} postprocess]}"
     fi
 
-    [[ ${report[${report} footer]} ]] && eval "${report[${report} footer]}"
+    [[ ${hook[${hook_choosen} footer]} ]] && eval "${hook[${hook_choosen} footer]}"
 }
 
 __um_add()
@@ -580,7 +580,7 @@ __um_add()
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid < <(report=um_default ; __um_query authority=^${authority}$ 2>/dev/null && \
+    read -r auuid aid < <(hook_choosen=um_default ; __um_query authority=^${authority}$ 2>/dev/null && \
         __um_query_post 2>/dev/null)
     if [[ $auuid && $aid ]]
     then
@@ -709,7 +709,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
             else
                 echo "Data set with id $eid has not been modified." 1>&2
             fi
-        done < <(report=um_default ; __um_query "$@" && __um_query_post)
+        done < <(hook_choosen=um_default ; __um_query "$@" && __um_query_post)
         [[ $modification == modification ]] &&
         {
             dir_stack=($(dirs -l -p))
@@ -749,7 +749,7 @@ __um_delete()
                     *)      continue                    ;;
                 esac
             fi
-        done 3<&0 < <(report=um_default ; __um_query "$@" && __um_query_post)
+        done 3<&0 < <(hook_choosen=um_default ; __um_query "$@" && __um_query_post)
 
         if ((${#deletion[@]} != 0))
         then
@@ -878,7 +878,7 @@ __um_modify()
                             ;;
                 esac
             fi
-        done 3<&0 < <(report=um_default ; __um_query "${patterns[@]}" && __um_query_post)
+        done 3<&0 < <(hook_choosen=um_default ; __um_query "${patterns[@]}" && __um_query_post)
 
         if ((${#modification[@]} != 0))
         then
@@ -1149,30 +1149,23 @@ done
 
 declare \
     editor= \
-    report_default=
-declare -A report
+    hook_default=
+declare -A hook
 
-[[ -f $URIMARK_CONF_FILE ]] &&
-{
-    #~ while read -r
-    #~ do
-        #~ eval "$REPLY" || { source "$URIMARK_CONF_FILE" 1>&2 ; exit 1 ; }
-    #~ done < "$URIMARK_CONF_FILE"
-    source "$URIMARK_CONF_FILE"
-}
+[[ -f $URIMARK_CONF_FILE ]] && source "$URIMARK_CONF_FILE"
 
 editor=${editor:-$EDITOR}
-[[ ! ${report[${report_default} description]} ]] && report_default=um_default
+[[ ! ${hook[${hook_default} description]} ]] && hook_default=um_default
 tag_default=${tag_default:-null}
 reference_default=${reference_default:-null}
 description_default=${description_default:-null}
 hierarchy_default=${hierarchy_default:-null}
 name_default=${name_default:-null}
 
-report[um_default description]="Builtin default report"
-report[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
+hook[um_default description]="Builtin default report"
+hook[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
 
-declare report=
+declare hook_choosen=
 
 while (($# > 0))
 do
@@ -1184,9 +1177,9 @@ do
             shift 2
             ;;
         *)
-            if [[ ${report[${1} description]} ]]
+            if [[ ${hook[${1} description]} ]]
             then
-                report=$1
+                hook_choosen=$1
                 shift 1
             else
                 { printf '%s\n' "Unknown parameter: '${1}'." 1>&2 ; exit 1 ; }
@@ -1194,8 +1187,8 @@ do
     esac
 done
 
-report=${report:-$report_default}
-[[ ${report[${report} filter]} && ${#patterns[@]} -eq 0 ]] && patterns=(${report[${report} filter]})
+hook_choosen=${hook_choosen:-$hook_default}
+[[ ${hook[${hook_choosen} filter]} && ${#patterns[@]} -eq 0 ]] && patterns=(${hook[${hook_choosen} filter]})
 
 case $action in
     add)
