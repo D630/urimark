@@ -1,5 +1,5 @@
 ```
-um (-A|-c|-d|-e|-h|-i|-m|-v)
+um (-A|-c|-d|-e|-h|-m|-v)
 
 SUBCOMMANDS
 -----------
@@ -12,7 +12,6 @@ SUBCOMMANDS
     -e, --edit                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
                                 -S,-T,-Y
     -h, --help
-    -i, --info
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
     -v, --version
@@ -55,7 +54,7 @@ ARGUMENTS
     <NAME>*                     'string'
     <PART>*                     'string'
     <REF>*                      'int' or 'int,int'
-    <SCHEME>                    'http','https','ftp','ftps','dav','davs',
+    <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
                                 'gopher','webdav','webdavs
     <TAG>*                      'string' or 'string;string;string'
     <URI>                       'string'
