@@ -86,7 +86,8 @@ ARGUMENTS
     <BD>*                       'date' or 'date,date'
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar'
-    <ID>*                       'int', 'int,int', 'int-int' (or combi)
+    <ID>*                       'int', 'int,int', 'int-int' (or combi).
+                                Two special values: 'first' and 'last'.
     <MD>*                       'date' or 'date,date'
     <NAME>*                     'string'
     <PART>*                     'string'
