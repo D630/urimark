@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.11" ; }
+__um_version() { echo "0.2.8.12" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -83,12 +83,14 @@ SUBCOMMANDS
 ARGUMENTS
 ---------
     <AUTH>*                     'string'
-    <BD>*                       'date' or 'date;date'
+    <BD>*                       'date' or 'date;date'. Two special
+                                values: 'first' and 'last'.
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi).
                                 Two special values: 'first' and 'last'.
-    <MD>*                       'date' or 'date;date'
+    <MD>*                       'date' or 'date;date'. Two special
+                                values: 'first' and 'last'.
     <NAME>*                     'string'
     <PART>*                     'string'
     <REF>*                      'int' or 'int,int'
@@ -112,8 +114,6 @@ __um_query()
         not= \
         operator= \
         pattern= \
-        pattern1= \
-        pattern2= \
         query_uri_authority= \
         query_uri_schemes= \
         query_uri_schemes_specific_parts= \
@@ -273,46 +273,78 @@ __um_query()
                     bd)
                             for j in ${val//;/ }
                             do
-                                times+=($(date --date="$j" +%s))
+                                if [[ $j =~ ^\^ ]]
+                                then
+                                    pattern=${val#^}
+                                else
+                                    pattern=${val/#/.\*}
+                                fi
+                                if [[ $pattern =~ \$$ ]]
+                                then
+                                    pattern=${pattern/%$/}
+                                else
+                                    pattern=${pattern/%/.\*}
+                                fi
+                                if [[ $pattern =~ ^(\.\*|)(first|last)(\.\*|)$ ]]
+                                then
+                                    times+=(${BASH_REMATCH//${BASH_REMATCH//.\*/}/$(__um_calculating_date 3 "${BASH_REMATCH//.\*/}")})
+                                else
+                                    times+=($(date --date="${pattern//.\*/}" +%s))
+                                fi
                             done
                             if ((${#times[@]} == 1))
                             then
-                                __um_query_parse_val
                                 egrep ${not:+-v} \
-                                        -e "^(\"[^\"\|]*\"\|){2}\"${pattern}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$" \
+                                        -e "^(\"[^\"\|]*\"\|){2}\"${times[0]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#times[@]} == 2 )) #ü
+                            elif (( ${#times[@]} == 2 ))
                             then
-                                pattern1=$(__um_query_binary ${times[0]} 1 3)
-                                pattern2=$(__um_query_binary ${times[1]} 2 3)
+                                times[0]=$(__um_query_binary ${times[0]} 1 3)
+                                times[1]=$(__um_query_binary ${times[1]} 2 3)
                                 sort -t '|' -k3 -n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -n -r \
-                                        -e "/^((\||)\"[^\"\|]*\"\|){2}\"${pattern1}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){2}\"${pattern2}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                        -e "^((\||)\"[^\"\|]*\"\|){2}\"${pattern2}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/ p" \
+                                        -e "/^((\||)\"[^\"\|]*\"\|){2}\"${times[0]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){2}\"${times[1]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
+                                        -e "^((\||)\"[^\"\|]*\"\|){2}\"${times[1]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/ p" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
                     md)
                             for j in ${val//;/ }
                             do
-                                times+=($(date --date="$j" +%s))
+                                if [[ $j =~ ^\^ ]]
+                                then
+                                    pattern=${val#^}
+                                else
+                                    pattern=${val/#/.\*}
+                                fi
+                                if [[ $pattern =~ \$$ ]]
+                                then
+                                    pattern=${pattern/%$/}
+                                else
+                                    pattern=${pattern/%/.\*}
+                                fi
+                                if [[ $pattern =~ ^(\.\*|)(first|last)(\.\*|)$ ]]
+                                then
+                                    times+=(${BASH_REMATCH//${BASH_REMATCH//.\*/}/$(__um_calculating_date 4 "${BASH_REMATCH//.\*/}")})
+                                else
+                                    times+=($(date --date="${pattern//.\*/}" +%s))
+                                fi
                             done
                             if ((${#times[@]} == 1))
                             then
-                                __um_query_parse_val
                                 egrep ${not:+-v} \
-                                        -e "^(\"[^\"\|]*\"\|){3}\"${pattern}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$" \
+                                        -e "^(\"[^\"\|]*\"\|){3}\"${times[0]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#times[@]} == 2 )) # ü
+                            elif (( ${#times[@]} == 2 ))
                             then
-                                pattern1=$(__um_query_binary ${times[0]} 1 4)
-                                pattern2=$(__um_query_binary ${times[1]} 2 4)
+                                times[0]=$(__um_query_binary ${times[0]} 1 4)
+                                times[1]=$(__um_query_binary ${times[1]} 2 4)
                                 sort -t '|' -k4 -n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -n -r \
-                                        -e "/^((\||)\"[^\"\|]*\"\|){3}\"${pattern1}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){3}\"${pattern2}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                        -e "^((\||)\"[^\"\|]*\"\|){3}\"${pattern2}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/ p" \
+                                        -e "/^((\||)\"[^\"\|]*\"\|){3}\"${times[0]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){3}\"${times[1]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
+                                        -e "^((\||)\"[^\"\|]*\"\|){3}\"${times[1]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/ p" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
@@ -994,6 +1026,24 @@ __um_calculating_id()
         else
             comm --nocheck-order -23 <(eval "printf '%s\n' {1..$(($(__um_calculating_id_print | tail -n1) + 1))}") <(__um_calculating_id_print) | head -n1
         fi
+    fi
+}
+
+__um_calculating_date()
+{
+    __um_calculating_date_print()
+    {
+        cut -d '|' -f $1 "${URIMARK_DATA_DIR}/_index" | \
+        tr -d '"' | \
+        sort -n
+    }
+
+    if [[ $2 == first ]]
+    then
+        __um_calculating_date_print "$1" | head -n1
+    elif [[ $2 == last ]]
+    then
+        __um_calculating_date_print "$1" | tail -n1
     fi
 }
 

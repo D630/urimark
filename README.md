@@ -43,12 +43,14 @@ SUBCOMMANDS
 ARGUMENTS
 ---------
     <AUTH>*                     'string'
-    <BD>*                       'date' or 'date;date'
+    <BD>*                       'date' or 'date;date'. Two special
+                                values: 'first' and 'last'.
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi).
                                 Two special values: 'first' and 'last'.
-    <MD>*                       'date' or 'date;date'
+    <MD>*                       'date' or 'date;date'. Two special
+                                values: 'first' and 'last'.
     <NAME>*                     'string'
     <PART>*                     'string'
     <REF>*                      'int' or 'int,int'
