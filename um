@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.15" ; }
+__um_version() { echo "0.2.9.0" ; }
 
-__um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
+__um_usage() { printf 'um (-A|-d|-e|-h|-m|-r|-v)' ; }
 
 __um_help()
 {
@@ -53,6 +53,8 @@ SUBCOMMANDS
     -h, --help
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
+    -r, --rebuild               -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
+                                -o,-S,-T,-Y
     -v, --version
 
     OPT                         ARG
@@ -176,18 +178,22 @@ __um_query()
                 case $var in
                     uuid)
                             __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^\"${pattern}\"\|(.*)$" "${URIMARK_DATA_DIR}/_index" \
+                            if [[ $action == rebuild ]]
+                            then
+                                find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
+                                        ! -name _index -regextype posix-egrep \
+                                        ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
+                                        -printf '%P\n' | \
+                                    tr '/' ' ' \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                            else
+                                egrep ${not:+-v} \
+                                        -e "^\"${pattern}\"\|(.*)$" "${URIMARK_DATA_DIR}/_index" \
+                                        >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
+                            fi
                             ;;
                     uuid-hidden)
                             __um_query_parse_val
-                            find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
-                                    ! -name _index -regextype posix-egrep \
-                                    ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
-                                    -printf '%P\n' | \
-                                tr '/' ' ' \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     id)
                             [[ $val =~ first ]] && val=${val//first/$(__um_calculating_id first)}
@@ -917,6 +923,56 @@ __um_modify()
     fi
 }
 
+__um_rebuild()
+{
+    declare \
+        rebuild_all= \
+        response=
+
+    declare -ga dir_stack=()
+
+    if (($# == 0))
+    then
+        { echo "We need to specify a filter." 1>&2 ; return 1 ; }
+    else
+        while read -r
+        do
+            if [[ $rebuild_all == rebuild_all || $non_interactive == non_interactive ]]
+            then
+                pushd "$REPLY" >/dev/null
+            else
+                printf 'UUID: %s\n' $REPLY
+                read -u 3 -p "Do you really wanne rebuild all records with this uuid? (y/n/all/quit) " response
+                case $response in
+                    all)
+                            rebuild_all=rebuild_all
+                            ;&
+                    y|yes)
+                            pushd "$REPLY" >/dev/null
+                            ;;
+                    n|no)
+                            continue
+                            ;;
+                    quit)
+                            DIRSTACK=()
+                            break
+                            ;;
+                    *)
+                            continue
+                            ;;
+                esac
+            fi
+        done 3<&0 < <(hook_choosen=um_default ; __um_query "$@" && __um_query_post | cut -d ' ' -f 1 | sort | uniq)
+    fi
+
+    if ((${#DIRSTACK[@]} > 1 ))
+    then
+        dir_stack=($(dirs -l -p))
+    else
+        { echo "No index has been rebuild." 1>&2 ; return 1 ; }
+    fi
+}
+
 __um_rebuild_index()
 {
     declare \
@@ -1106,6 +1162,7 @@ do
         or)                 args="${args}-o "                            ;;
         part=?*)            args="${args}-T ${delim}${arg#*=}${delim} "  ;;
         print-uri)          args="${args}-u "                            ;;
+        rebuild)            args="${args}-r "                            ;;
         reference=?*)       args="${args}-5 ${delim}${arg#*=}${delim} "  ;;
         reference+=?*)      args="${args}-6 ${delim}${arg#*+=}${delim} " ;;
         reference-=?*)      args="${args}-7 ${delim}${arg#*-=}${delim} " ;;
@@ -1159,7 +1216,7 @@ declare -a \
 
 
 eval set -- "$args"
-while getopts :AaY:B:d8:eH:I:M:9mN:n!oT:5:6:7:S:2:3:4:0:1:hv opt
+while getopts :AaY:B:d8:eH:I:M:9mN:n!oT:5:6:7:S:2:3:4:0:1:hvr opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"                    ;;
@@ -1186,6 +1243,7 @@ do
         N)  __um_check_args "name=$OPTARG"                    ;;
         o)  patterns+=(or)                                    ;;
         !)  patterns+=(not)                                   ;;
+        r)  action=rebuild                                    ;;
         S)  __um_check_args "scheme=$OPTARG"                  ;;
         T)  __um_check_args "part=$OPTARG"                    ;;
         v)  action=version                                    ;;
@@ -1225,7 +1283,7 @@ declare hook_choosen=
 while (($# > 0))
 do
     case $1 in
-        -9|-!|-a|-A|-d|-e|-h|-m|-n|-o|-v)
+        -9|-!|-a|-A|-d|-e|-h|-m|-n|-o|-r|-v)
             shift 1
             ;;
         -[0-8]|-B|-H|-I|-M|-N|-S|-T|-Y)
@@ -1279,6 +1337,13 @@ case $action in
                     unset -v "patterns[$i]"
             done
             __um_modify &&
+            {
+                __um_rebuild_index
+                __um_cat_indexes
+            }
+            ;;
+    rebuild)
+            __um_rebuild "${patterns[@]}" &&
             {
                 __um_rebuild_index
                 __um_cat_indexes

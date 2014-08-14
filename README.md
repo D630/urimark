@@ -13,6 +13,8 @@ SUBCOMMANDS
     -h, --help
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
+    -r, --rebuild               -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
+                                -o,-S,-T,-Y
     -v, --version
 
     OPT                         ARG
