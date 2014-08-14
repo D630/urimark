@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.10" ; }
+__um_version() { echo "0.2.8.11" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -473,15 +473,15 @@ __um_query_post()
         __um_query_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
     fi
 
-    [[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
-
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
-        eval "${hook[${hook_choosen} preprocess]} comm -23 <(__um_query_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ${hook[${hook_choosen} postprocess]}"
+        __um_query_post_result() { comm -23 <(__um_query_post_or) <(sort "${URIMARK_TMP_DIR}/not1" | uniq) ; }
     else
-        eval "${hook[${hook_choosen} preprocess]} __um_query_post_or ${hook[${hook_choosen} postprocess]}"
+        __um_query_post_result() { __um_query_post_or ; }
     fi
 
+    [[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
+    eval "${hook[${hook_choosen} preprocess]} __um_query_post_result ${hook[${hook_choosen} postprocess]}"
     [[ ${hook[${hook_choosen} footer]} ]] && eval "${hook[${hook_choosen} footer]}"
 }
 
