@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.7" ; }
+__um_version() { echo "0.2.8.8" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -190,6 +190,8 @@ __um_query()
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     id)
+                            [[ $val =~ first ]] && val=${val//first/$(__um_calculating_id first)}
+                            [[ $val =~ last ]] && val=${val//last/$(__um_calculating_id last)}
                             if [[ $val =~ - ]]
                             then
                                 for id in ${val//-/ }
@@ -576,7 +578,7 @@ __um_add()
 
     bd=$date
     md=$date
-    id=$(__um_calculating_id)
+    id=$(__um_calculating_id next)
     scheme=${uri%%:*}
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
@@ -987,12 +989,20 @@ __um_calculating_id()
         sort -n
     }
 
-    if [[ ! -e ${URIMARK_DATA_DIR}/_index ]]
+    if [[ $1 == first ]]
     then
-        echo 1
-    else
-        declare next_id=$(($(__um_calculating_id_print | tail -n1) + 1))
-        comm -23 <(eval "printf '%s\n' {1..${next_id}}") <(__um_calculating_id_print) | head -n1
+        __um_calculating_id_print | head -n1
+    elif [[ $1 == last ]]
+    then
+        __um_calculating_id_print | tail -n1
+    elif [[ $1 == next ]]
+    then
+        if [[ ! -e ${URIMARK_DATA_DIR}/_index ]]
+        then
+            echo 1
+        else
+            comm --nocheck-order -23 <(eval "printf '%s\n' {1..$(($(__um_calculating_id_print | tail -n1) + 1))}") <(__um_calculating_id_print) | head -n1
+        fi
     fi
 }
 
