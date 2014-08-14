@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.9" ; }
+__um_version() { echo "0.2.8.10" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -83,12 +83,12 @@ SUBCOMMANDS
 ARGUMENTS
 ---------
     <AUTH>*                     'string'
-    <BD>*                       'date' or 'date,date'
+    <BD>*                       'date' or 'date;date'
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar'
     <ID>*                       'int', 'int,int', 'int-int' (or combi).
                                 Two special values: 'first' and 'last'.
-    <MD>*                       'date' or 'date,date'
+    <MD>*                       'date' or 'date;date'
     <NAME>*                     'string'
     <PART>*                     'string'
     <REF>*                      'int' or 'int,int'
@@ -122,7 +122,7 @@ __um_query()
 
     declare -a \
         ids=() \
-        utc=()
+        times=()
 
     declare -gA operators
 
@@ -271,26 +271,21 @@ __um_query()
                             fi
                             ;;
                     bd)
-                            for j in ${val//,/ }
+                            for j in ${val//;/ }
                             do
-                                if [[ $j =~ ^[[:digit:]]*$ ]]
-                                then
-                                    utc+=($j)
-                                else
-                                    utc+=($(date --utc --date "$j" +%s))
-                                fi
+                                times+=($(date --date="$j" +%s))
                             done
-                            if ((${#utc[@]} == 1))
+                            if ((${#times[@]} == 1))
                             then
                                 __um_query_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\"[^\"\|]*\"\|){2}\"${pattern}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#utc[@]} == 2 )) #ü
+                            elif (( ${#times[@]} == 2 )) #ü
                             then
-                                pattern1=$(__um_query_binary ${utc[0]} 1 3)
-                                pattern2=$(__um_query_binary ${utc[1]} 2 3)
+                                pattern1=$(__um_query_binary ${times[0]} 1 3)
+                                pattern2=$(__um_query_binary ${times[1]} 2 3)
                                 sort -t '|' -k3 -n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -n -r \
                                         -e "/^((\||)\"[^\"\|]*\"\|){2}\"${pattern1}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){2}\"${pattern2}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
@@ -299,26 +294,21 @@ __um_query()
                             fi
                             ;;
                     md)
-                            for j in ${val//,/ }
+                            for j in ${val//;/ }
                             do
-                                if [[ $j =~ ^[[:digit:]]*$ ]]
-                                then
-                                    utc+=($j)
-                                else
-                                    utc+=($(date --utc --date "$j" +%s))
-                                fi
+                                times+=($(date --date="$j" +%s))
                             done
-                            if ((${#utc[@]} == 1))
+                            if ((${#times[@]} == 1))
                             then
                                 __um_query_parse_val
                                 egrep ${not:+-v} \
                                         -e "^(\"[^\"\|]*\"\|){3}\"${pattern}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$" \
                                         "${URIMARK_DATA_DIR}/_index" \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#utc[@]} == 2 )) # ü
+                            elif (( ${#times[@]} == 2 )) # ü
                             then
-                                pattern1=$(__um_query_binary ${utc[0]} 1 4)
-                                pattern2=$(__um_query_binary ${utc[1]} 2 4)
+                                pattern1=$(__um_query_binary ${times[0]} 1 4)
+                                pattern2=$(__um_query_binary ${times[1]} 2 4)
                                 sort -t '|' -k4 -n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -n -r \
                                         -e "/^((\||)\"[^\"\|]*\"\|){3}\"${pattern1}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^((\||)\"[^\"\|]*\"\|){3}\"${pattern2}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
@@ -396,7 +386,7 @@ __um_query()
                             ;;
                 esac
                 ids=()
-                utc=()
+                times=()
                 not=
             fi
         done
@@ -572,7 +562,7 @@ __um_add()
         [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
 
-    date=$(date --utc --date now +%s)
+    date=$(date --date=now +%s)
 
     ((${#tags[@]} == 0)) && tags[0]=$tag_default
     ((${#references[@]} == 0)) && references[0]=$reference_default
@@ -680,7 +670,7 @@ __um_edit()
             pushd "$euuid" >/dev/null
             md5_pre=$(md5sum "$file_tmp")
             $editor "$file_tmp" </dev/tty
-            date=$(date --utc --date now +%s)
+            date=$(date --date=now +%s)
             md5_post=$(md5sum "$file_tmp")
             if [[ $md5_pre != $md5_post ]]
             then
@@ -887,7 +877,7 @@ __um_modify()
         if ((${#modification[@]} != 0))
         then
             dir_stack=($(dirs -l -p))
-            date=$(date --utc --date now +%s)
+            date=$(date --date=now +%s)
             printf '%s\n' "${modification[@]}" | \
                 xargs -r sed -r -i -e "/date_modification=.*/ c date_modification=${date}" "${mods[@]}"
             echo "Records have been modified." 1>&2
