@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.14" ; }
+__um_version() { echo "0.2.8.15" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -423,15 +423,15 @@ __um_query()
     fi
 }
 
-__um_query_binary() #ü
+__um_query_binary()
 {
     declare \
-            b= \
-            begin= \
-            e= \
-            end= \
-            middle= \
-            pattern=
+        b= \
+        begin= \
+        e= \
+        end= \
+        middle= \
+        pattern=
 
     declare -a array=()
 
@@ -442,9 +442,9 @@ __um_query_binary() #ü
     else
         e=1
     fi
-    array=($(cut -d '|' -f "$3" "${URIMARK_DATA_DIR}/_index" | \
+    mapfile -t array < <(cut -d '|' -f "$3" "${URIMARK_DATA_DIR}/_index" | \
         tr -d '"' | \
-        sort -n))
+        sort -n)
     begin=0
     end=$((${#array[@]} - 1))
 
