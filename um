@@ -299,9 +299,8 @@ __um_query()
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#times[@]} == 2 ))
                             then
-                                times=(${times[@]//.\*/})
-                                times[0]=$(__um_query_binary ${times[0]} 1 3)
-                                times[1]=$(__um_query_binary ${times[1]} 2 3)
+                                times[0]=$(__um_query_binary ${times[0]//.\*/} 1 3)
+                                times[1]=$(__um_query_binary ${times[1]//.\*/} 2 3)
                                 sort -t '|' -k 3.2n "${URIMARK_DATA_DIR}/_index" | \
                                     sed -r -n \
                                         -e "/^(\"[^\"\|]*\"\|){2}\"${times[0]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){2}\"${times[1]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
@@ -339,9 +338,8 @@ __um_query()
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             elif (( ${#times[@]} == 2 ))
                             then
-                                times=(${times[@]//.\*/})
-                                times[0]=$(__um_query_binary ${times[0]} 1 4)
-                                times[1]=$(__um_query_binary ${times[1]} 2 4)
+                                times[0]=$(__um_query_binary ${times[0]//.\*/} 1 4)
+                                times[1]=$(__um_query_binary ${times[1]//.\*/} 2 4)
                                     sort -t '|' -k 4.2n "${URIMARK_DATA_DIR}/_index" | \
                                         sed -r -n \
                                             -e "/^(\"[^\"\|]*\"\|){3}\"${times[0]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){3}\"${times[1]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
