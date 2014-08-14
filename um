@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.8.8" ; }
+__um_version() { echo "0.2.8.9" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-v)' ; }
 
@@ -1160,8 +1160,13 @@ do
 done
 
 declare \
+    description_default= \
     editor= \
-    hook_default=
+    hierarchy_default= \
+    hook_default= \
+    name_default= \
+    reference_default= \
+    tag_defaul=
 declare -A hook
 
 [[ -f $URIMARK_CONF_FILE ]] && source "$URIMARK_CONF_FILE"
