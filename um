@@ -192,9 +192,6 @@ __um_query()
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             fi
                             ;;
-                    uuid-hidden)
-                            __um_query_parse_val
-                            ;;
                     id)
                             [[ $val =~ first ]] && val=${val//first/$(__um_calculating_id first)}
                             [[ $val =~ last ]] && val=${val//last/$(__um_calculating_id last)}
