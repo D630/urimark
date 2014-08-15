@@ -33,9 +33,9 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.2" ; }
+__um_version() { echo "0.2.9.3" ; }
 
-__um_usage() { printf 'um (-A|-d|-e|-h|-m|-r|-v)' ; }
+__um_usage() { printf 'um (-a|-d|-e|-h|-m|-r|-v)' ; }
 
 __um_help()
 {
@@ -45,41 +45,41 @@ SUBCOMMANDS
 -----------
     ACTION                      OPT
     ------                      ---
-    -a, --add                   -1,-2,-5,-8,-H,-N
-    -d, --delete                -0,-1,-2,-5,-8,-!,-A,-B,-H,-I,-M,-N,-n,
-                                -o,-S,-T,-Y
-    -e, --edit                  -0,-1,-2,-5,-8,-!,-A,-B,-H,-I,-M,-N,-o,
-                                -S,-T,-Y
+    -a, --add                   -4,-7,-D,-H,-N,-U
+    -d, --delete                -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+                                -P,-S,-U,-Y
+    -e, --edit                  -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,
+                                -S,-U,-Y
     -h, --help
-    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-A,-B,
-                                -H,-I,-M,-N,-n,-o,-S,-T,-Y
-    -r, --rebuild               -0,-1,-2,-5,-8,-!,-A,-B,-H,-I,-M,-N,-n,
-                                -o,-S,-T,-Y
+    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
+                                -M,-N,-n,-!,-0,-P,-S,-U,-Y
+    -r, --rebuild               -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+                                -P,-S,-U,-Y
     -v, --version
 
     OPT                         ARG
     ---                         ---
     -0, --uuid=                 <UUID>
-    -1, --uri=                  <URI>
-    -2, --tag=                  <TAG>
-    -3, --tag+=                 <TAG>
-    -4, --tag-=                 <TAG>
-    -5, --reference=            <REF>
-    -6, --reference+=           <REF>
-    -7, --reference-=           <REF>
-    -8, --description=          <DESC>
-    -9, --mod
+    -1, --id=                   <ID>
+    -2, --bd=                   <BD>
+    -3, --md=                   <MD>
+    -4, --tag=                  <TAG>
+    -5, --tag+=                 <TAG>
+    -6, --tag-=                 <TAG>
+    -7, --reference=            <REF>
+    -8, --reference+=           <REF>
+    -9, --reference-=           <REF>
     -A, --and
-    -B, --bd=                   <BD>
+    -D, --description=          <DESC>
     -H, --hierarchy=            <HIER>
-    -I, --id=                   <ID>
-    -M, --md=                   <MD>
+    -M, --mod
     -N, --name=                 <NAME>
     -n, --non-interactive
     -!, --not
-    -o, --or
+    -O, --or
+    -P, --part=                 <PART>
     -S, --scheme=               <SCHEME>
-    -T, --part=                 <PART>
+    -U, --uri=                  <URI>
     -Y, --authority=            <AUTH>
 
 ARGUMENTS
@@ -1132,33 +1132,32 @@ do
     case $arg in
         add)                args="${args}-a "                            ;;
         and)                args="${args}-A "                            ;;
-        authority=?*)       args="${args}-Y ${arg#*=} "                  ;;
-        bd=?*)              args="${args}-B ${arg#*=} "                  ;;
+        authority=?*)       args="${args}-Y ${delim}${arg#*=}${delim} "  ;;
+        bd=?*)              args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
         delete)             args="${args}-d "                            ;;
-        description=?*)     args="${args}-8 ${delim}${arg#*=}${delim} "  ;;
+        description=?*)     args="${args}-D ${delim}${arg#*=}${delim} "  ;;
         edit)               args="${args}-e "                            ;;
         help)               args="${args}-h "                            ;;
-        hierarchy=?*)       args="${args}-H ${arg#*=} "                  ;;
-        id=?*)              args="${args}-I ${arg#*=} "                  ;;
-        md=?*)              args="${args}-M ${arg#*=} "                  ;;
-        mod)                args="${args}-9 "                            ;;
+        hierarchy=?*)       args="${args}-H ${delim}${arg#*=}${delim} "  ;;
+        id=?*)              args="${args}-1 ${delim}${arg#*=}${delim} "  ;;
+        md=?*)              args="${args}-3 ${delim}${arg#*=}${delim} "  ;;
+        mod)                args="${args}-M "                            ;;
         modify)             args="${args}-m "                            ;;
         name=?*)            args="${args}-N ${delim}${arg#*=}${delim} "  ;;
         non-interactive)    args="${args}-n "                            ;;
         not)                args="${args}-! "                            ;;
-        or)                 args="${args}-o "                            ;;
-        part=?*)            args="${args}-T ${delim}${arg#*=}${delim} "  ;;
-        print-uri)          args="${args}-u "                            ;;
+        or)                 args="${args}-O "                            ;;
+        part=?*)            args="${args}-P ${delim}${arg#*=}${delim} "  ;;
         rebuild)            args="${args}-r "                            ;;
-        reference=?*)       args="${args}-5 ${delim}${arg#*=}${delim} "  ;;
-        reference+=?*)      args="${args}-6 ${delim}${arg#*+=}${delim} " ;;
-        reference-=?*)      args="${args}-7 ${delim}${arg#*-=}${delim} " ;;
-        scheme=?*)          args="${args}-S ${arg#*=} "                  ;;
-        tag=?*)             args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
-        tag+=?*)            args="${args}-3 ${delim}${arg#*+=}${delim} " ;;
-        tag-=?*)            args="${args}-4 ${delim}${arg#*-=}${delim} " ;;
-        uri=?*)             args="${args}-1 ${delim}${arg#*=}${delim} "  ;;
-        uuid=?*)            args="${args}-0 ${arg#*=} "                  ;;
+        reference=?*)       args="${args}-7 ${delim}${arg#*=}${delim} "  ;;
+        reference+=?*)      args="${args}-8 ${delim}${arg#*+=}${delim} " ;;
+        reference-=?*)      args="${args}-9 ${delim}${arg#*-=}${delim} " ;;
+        scheme=?*)          args="${args}-S ${delim}${arg#*=}${delim} "  ;;
+        tag=?*)             args="${args}-4 ${delim}${arg#*=}${delim} "  ;;
+        tag+=?*)            args="${args}-5 ${delim}${arg#*+=}${delim} " ;;
+        tag-=?*)            args="${args}-6 ${delim}${arg#*-=}${delim} " ;;
+        uri=?*)             args="${args}-U ${delim}${arg#*=}${delim} "  ;;
+        uuid=?*)            args="${args}-0 ${delim}${arg#*=}${delim} "  ;;
         version)            args="${args}-v "                            ;;
         authority=|\
         bd=|\
@@ -1202,36 +1201,36 @@ declare -a \
     patterns=()
 
 eval set -- "$args"
-while getopts :0:1:2:3:4:5:6:7:8:9AaB:deH:hI:M:mN:no!rS:T:vY: opt
+while getopts :0:1:2:3:4:5:6:7:8:9:AaD:deH:hMmN:nOP:!rS:U:vY: opt
 do
     case $opt in
         0)  __um_check_args "uuid=$OPTARG"          ;;
-        1)  __um_check_args "uri=$OPTARG"           ;;
-        2)  __um_check_args "tag=$OPTARG"           ;;
-        3)  __um_check_args "tag+=$OPTARG"          ;;
-        4)  __um_check_args "tag-=$OPTARG"          ;;
-        5)  __um_check_args "reference=$OPTARG"     ;;
-        6)  __um_check_args "reference+=$OPTARG"    ;;
-        7)  __um_check_args "reference-=$OPTARG"    ;;
-        8)  __um_check_args "description=$OPTARG"   ;;
-        9)  patterns+=(mod)                         ;;
-        A)  patterns+=(and)                         ;;
+        1)  __um_check_args "id=$OPTARG"            ;;
+        2)  __um_check_args "bd=$OPTARG"            ;;
+        3)  __um_check_args "md=$OPTARG"            ;;
+        4)  __um_check_args "tag=$OPTARG"           ;;
+        5)  __um_check_args "tag+=$OPTARG"          ;;
+        6)  __um_check_args "tag-=$OPTARG"          ;;
+        7)  __um_check_args "reference=$OPTARG"     ;;
+        8)  __um_check_args "reference+=$OPTARG"    ;;
+        9)  __um_check_args "reference-=$OPTARG"    ;;
         a)  action=add                              ;;
-        B)  __um_check_args "bd=$OPTARG"            ;;
+        A)  patterns+=(and)                         ;;
         d)  action=delete                           ;;
+        D)  __um_check_args "description=$OPTARG"   ;;
         e)  action=edit                             ;;
         h)  action=help                             ;;
         H)  __um_check_args "hierarchy=$OPTARG"     ;;
-        I)  __um_check_args "id=$OPTARG"            ;;
         m)  action=modify                           ;;
-        M)  __um_check_args "md=$OPTARG"            ;;
+        M)  patterns+=(mod)                         ;;
         n)  non_interactive=non_interactive         ;;
         N)  __um_check_args "name=$OPTARG"          ;;
-        o)  patterns+=(or)                          ;;
+        O)  patterns+=(or)                          ;;
         !)  patterns+=(not)                         ;;
+        P)  __um_check_args "part=$OPTARG"          ;;
         r)  action=rebuild                          ;;
         S)  __um_check_args "scheme=$OPTARG"        ;;
-        T)  __um_check_args "part=$OPTARG"          ;;
+        U)  __um_check_args "uri=$OPTARG"           ;;
         v)  action=version                          ;;
         Y)  __um_check_args "authority=$OPTARG"     ;;
         :)  printf '%s\n' "Option '-${OPTARG}' requires an argument." 1>&2
@@ -1270,10 +1269,10 @@ declare hook_choosen=
 while (($# > 0))
 do
     case $1 in
-        -9|-A|-a|-d|-e|-h|-m|-n|-o|-!|-r|-v)
+        -A|-a|-d|-e|-h|-M|-m|-n|-O|-!|-r|-v)
             shift 1
             ;;
-        -[0-8]|-B|-H|-I|-M|-N|-S|-T|-Y)
+        -[0-9]|-U|-D|-H|-N|-S|-P|-Y)
             shift 2
             ;;
         *)
