@@ -1215,7 +1215,7 @@ do
         7)  __um_check_args "reference-=$OPTARG"    ;;
         8)  __um_check_args "description=$OPTARG"   ;;
         9)  patterns+=(mod)                         ;;
-        A)  patterns+=(and)                             ;;
+        A)  patterns+=(and)                         ;;
         a)  action=add                              ;;
         B)  __um_check_args "bd=$OPTARG"            ;;
         d)  action=delete                           ;;
