@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.1" ; }
+__um_version() { echo "0.2.9.2" ; }
 
 __um_usage() { printf 'um (-A|-d|-e|-h|-m|-r|-v)' ; }
 
@@ -45,15 +45,15 @@ SUBCOMMANDS
 -----------
     ACTION                      OPT
     ------                      ---
-    -A, --add                   -1,-2,-5,-8,-H,-N
-    -d, --delete                -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
+    -a, --add                   -1,-2,-5,-8,-H,-N
+    -d, --delete                -0,-1,-2,-5,-8,-!,-A,-B,-H,-I,-M,-N,-n,
                                 -o,-S,-T,-Y
-    -e, --edit                  -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-o,
+    -e, --edit                  -0,-1,-2,-5,-8,-!,-A,-B,-H,-I,-M,-N,-o,
                                 -S,-T,-Y
     -h, --help
-    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-a,-B,
+    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-!,-A,-B,
                                 -H,-I,-M,-N,-n,-o,-S,-T,-Y
-    -r, --rebuild               -0,-1,-2,-5,-8,-!,-a,-B,-H,-I,-M,-N,-n,
+    -r, --rebuild               -0,-1,-2,-5,-8,-!,-A,-B,-H,-I,-M,-N,-n,
                                 -o,-S,-T,-Y
     -v, --version
 
@@ -69,7 +69,7 @@ SUBCOMMANDS
     -7, --reference-=           <REF>
     -8, --description=          <DESC>
     -9, --mod
-    -a, --and
+    -A, --and
     -B, --bd=                   <BD>
     -H, --hierarchy=            <HIER>
     -I, --id=                   <ID>
@@ -1130,8 +1130,8 @@ for arg
 do
     arg=${arg#--}
     case $arg in
-        add)                args="${args}-A "                            ;;
-        and)                args="${args}-a "                            ;;
+        add)                args="${args}-a "                            ;;
+        and)                args="${args}-A "                            ;;
         authority=?*)       args="${args}-Y ${arg#*=} "                  ;;
         bd=?*)              args="${args}-B ${arg#*=} "                  ;;
         delete)             args="${args}-d "                            ;;
@@ -1215,8 +1215,8 @@ do
         7)  __um_check_args "reference-=$OPTARG"    ;;
         8)  __um_check_args "description=$OPTARG"   ;;
         9)  patterns+=(mod)                         ;;
-        A)  action=add                              ;;
-        a)  patterns+=(and)                         ;;
+        A)  patterns+=(and)                             ;;
+        a)  action=add                              ;;
         B)  __um_check_args "bd=$OPTARG"            ;;
         d)  action=delete                           ;;
         e)  action=edit                             ;;
