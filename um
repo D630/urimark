@@ -937,6 +937,8 @@ __um_rebuild()
 
     declare -ga dir_stack=()
 
+    exec 3<&0
+
     if (($# == 0))
     then
         { echo "We need to specify a filter." 1>&2 ; return 1 ; }
@@ -956,7 +958,7 @@ __um_rebuild()
                     *)      continue                    ;;
                 esac
             fi
-        done 3<&0 < <(hook_choosen=um_default ; __um_query "$@" && __um_query_post | cut -d ' ' -f 1 | sort | uniq)
+        done < <(hook_choosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d '/' -f 1 | sort | uniq)
         if ((${#DIRSTACK[@]} > 1 ))
         then
             dir_stack=($(dirs -l -p))
@@ -965,6 +967,8 @@ __um_rebuild()
             { echo "No index has been rebuild." 1>&2 ; return 1 ; }
         fi
     fi
+
+    exec 3<&-
 }
 
 __um_rebuild_index()
