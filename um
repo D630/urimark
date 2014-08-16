@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.4" ; }
+__um_version() { echo "0.2.9.5" ; }
 
 __um_usage() { printf 'um (-a|-d|-e|-h|-m|-r|-v)' ; }
 
@@ -770,6 +770,8 @@ __um_delete()
 
     declare -ga dir_stack=()
 
+    exec 3<&0
+
     if (($# == 0))
     then
         { echo "We need to specify a filter." 1>&2 ; return 1 ; }
@@ -789,7 +791,7 @@ __um_delete()
                     *)      continue               ;;
                 esac
             fi
-        done 3<&0 < <(hook_choosen=um_default ; __um_query "$@" && __um_query_post)
+        done < <(hook_choosen=um_default ; __um_query "$@" >/dev/null && __um_query_post)
         if ((${#deletion[@]} != 0))
         then
             for d in "${deletion[@]}"
@@ -803,6 +805,8 @@ __um_delete()
             { echo "No Record has been deleted." 1>&2 ; return 1 ; }
         fi
     fi
+
+    exec 3<&-
 }
 
 __um_modify()
@@ -824,6 +828,8 @@ __um_modify()
        tags=()
 
     declare -ga dir_stack=()
+
+    exec 3<&0
 
     if ((${#mods[@]} == 0))
     then
@@ -914,7 +920,7 @@ __um_modify()
                             ;;
                 esac
             fi
-        done 3<&0 < <(hook_choosen=um_default ; __um_query "${patterns[@]}" && __um_query_post)
+        done < <(hook_choosen=um_default ; __um_query "${patterns[@]}" >/dev/null && __um_query_post)
         if ((${#modification[@]} != 0))
         then
             dir_stack=($(dirs -l -p))
@@ -927,6 +933,8 @@ __um_modify()
             { echo "No Record has been modified." 1>&2 ; return 1 ; }
         fi
     fi
+
+    exec 3<&-
 }
 
 __um_rebuild()
