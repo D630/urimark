@@ -14,7 +14,7 @@ SUBCOMMANDS
     -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
                                 -M,-N,-n,-!,-0,-P,-S,-U,-Y
     -r, --rebuild               -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
-                                -P,-S,-U,-Y
+                                -P,-S,-U,-x,-Y
     -v, --version
 
     OPT                         ARG
@@ -40,6 +40,7 @@ SUBCOMMANDS
     -P, --part=                 <PART>
     -S, --scheme=               <SCHEME>
     -U, --uri=                  <URI>
+    -x, --index
     -Y, --authority=            <AUTH>
 
 ARGUMENTS
