@@ -1364,20 +1364,23 @@ case $action in
     add)
             __um_add "${patterns[@]}" &&
             {
-                __um_rebuild_index
-                __um_cat_indexes
+                __um_rebuild_index &&
+                __um_cat_indexes &&
+                echo "Done." 1>&2
             }
             ;;
     delete)
             __um_delete "${patterns[@]}" &&
             {
                 __um_delete_empty_dirs
-                __um_rebuild_index
-                __um_cat_indexes
+                __um_rebuild_index &&
+                __um_cat_indexes &&
+                echo "Done." 1>&2
             }
             ;;
     edit)
-            __um_edit "${patterns[@]}"
+            __um_edit "${patterns[@]}" &&
+            echo "Done." 1>&2
             ;;
     help)
             __um_help
@@ -1395,8 +1398,9 @@ case $action in
             done
             __um_modify &&
             {
-                __um_rebuild_index
-                __um_cat_indexes
+                __um_rebuild_index &&
+                __um_cat_indexes &&
+                echo "Done." 1>&2
             }
             ;;
     rebuild)
