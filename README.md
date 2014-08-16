@@ -1,4 +1,6 @@
 ```
+v0.2.9.5
+
 um (-a|-d|-e|-h|-m|-r|-v)
 
 SUBCOMMANDS
