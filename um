@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.9" ; }
+__um_version() { echo "0.2.9.10" ; }
 
 __um_usage()
 {
@@ -95,7 +95,7 @@ ARGUMENTS
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar/n'
     <HOOK>                      'string' without space character
-    <ID>*                       'int', 'int,int', range 'int-int'
+    <ID>*                       'int', 'int;int;n' or range 'int-int'
                                 (or combi). Two special values: 'first'
                                 and 'last'
     <MD>                        'date'* or range 'date;date'. Two special
@@ -260,9 +260,9 @@ __um_query()
                                     sed -r -n \
                                         -e "/^(\"[^\"\|]*\"\|){1}\"${ids[0]}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){1}\"${ids[1]}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$/${not:+!}p" \
                                     >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif [[ $val =~ , ]]
+                            elif [[ $val =~ \; ]]
                             then
-                                for id in ${val//,/ }
+                                for id in ${val//;/ }
                                 do
                                     if [[ $id =~ ^\^ ]]
                                     then
@@ -279,10 +279,9 @@ __um_query()
                                     fi
                                     ids+=($id)
                                 done
-                                printf -v pattern '%s|' ${ids[*]}
-                                pattern=${pattern%|}
+                                printf -v pattern '%s|' "${ids[@]}"
                                 egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){1}\"(${pattern})\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
+                                    -e "^(\"[^\"\|]*\"\|){1}\"(${pattern%|*})\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             else

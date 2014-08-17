@@ -79,7 +79,7 @@ ARGUMENTS
     <DESC>*                     'string'
     <HIER>*                     '/foo/bar/n'
     <HOOK>                      'string' without space character
-    <ID>*                       'int', 'int,int', range 'int-int'
+    <ID>*                       'int', 'int;int;n' or range 'int-int'
                                 (or combi). Two special values: 'first'
                                 and 'last'
     <MD>                        'date'* or range 'date;date'. Two special
