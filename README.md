@@ -1,6 +1,92 @@
 ## urimark v0.3.0.0 [GNU GPLv3]
 
-#### Items
+### Index
+
+1. [Install](#install)
+2. [Usage](#usage)
+3. [Examples](#examples)
+4. [Storage](#storage)
+5. [Enviroment](#enviroment)
+6. [Configurations](#configurations)
+6.1. [Hooks](#hooks)
+7. [Notes](#notes)
+8. [TODO](#todo)
+9. [Bugs & Requests](#bugs--requests)
+
+### Install
+### Usage
+
+```
+um (-a|-d|-e|-h|-m|-r|-v)
+
+SUBCOMMANDS
+-----------
+    ACTION                      OPT
+    ------                      ---
+    -a, --add                   -4,-7,-D,-H,-N,-U
+    -d, --delete                -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+                                -P,-S,-U,-Y
+    -e, --edit                  -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,
+                                -S,-U,-Y
+    -h, --help
+    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
+                                -M,-N,-n,-!,-0,-P,-S,-U,-Y
+    -r, --rebuild               -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+                                -P,-S,-U,-x,-Y
+    -v, --version
+
+    OPT                         ARG
+    ---                         ---
+    -0, --uuid=                 <UUID>
+    -1, --id=                   <ID>
+    -2, --bd=                   <BD>
+    -3, --md=                   <MD>
+    -4, --tag=                  <TAG>
+    -5, --tag+=                 <TAG>
+    -6, --tag-=                 <TAG>
+    -7, --reference=            <REF>
+    -8, --reference+=           <REF>
+    -9, --reference-=           <REF>
+    -A, --and
+    -D, --description=          <DESC>
+    -H, --hierarchy=            <HIER>
+    -M, --mod
+    -N, --name=                 <NAME>
+    -n, --non-interactive
+    -!, --not
+    -O, --or
+    -P, --part=                 <PART>
+    -S, --scheme=               <SCHEME>
+    -U, --uri=                  <URI>
+    -x, --index
+    -Y, --authority=            <AUTH>
+
+ARGUMENTS
+---------
+    <AUTH>*                     'string'
+    <BD>                        'date'* or 'date;date'. Two special
+                                values: 'first' and 'last'.
+    <DESC>*                     'string'
+    <HIER>*                     '/foo/bar'
+    <ID>*                       'int', 'int,int', 'int-int' (or combi).
+                                Two special values: 'first' and 'last'.
+    <MD>                        'date'* or 'date;date'. Two special
+                                values: 'first' and 'last'.
+    <NAME>*                     'string'
+    <PART>*                     'string'
+    <REF>*                      'int' or 'int,int'
+    <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
+                                'gopher','webdav','webdavs
+    <TAG>*                      'string' or 'string;string;string'
+    <URI>                       'string'
+    <UUID>*                     'uuid'
+
+    *regextype: posix-egrep
+```
+
+### Examples
+
+### Storage
 
 Currently, `urimark` can handle URLs with these protocols: http, https, ftp, ftps, dav, davs, gopher, webdav, webdavs. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
 
@@ -100,80 +186,6 @@ uri_scheme_specific_part_tag[4]="vcs"
 "42712582202233536417"|"1"|"1408100780"|"1408282460"|"https"|"bitbucket.org"|"/"|"Plant your code in the cloud. Watch it grow."|"web-based hosting service for projects that use either the Mercurial or Git revision control systems."|"/software/internet/web/crc"|"hg;mercurial;git;web;code;collaboration;vcs;atlassian"|"2"
 ```
 
-#### Hooks
-### Index
-### Install
-### Usage
-
-```
-um (-a|-d|-e|-h|-m|-r|-v)
-
-SUBCOMMANDS
------------
-    ACTION                      OPT
-    ------                      ---
-    -a, --add                   -4,-7,-D,-H,-N,-U
-    -d, --delete                -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
-                                -P,-S,-U,-Y
-    -e, --edit                  -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,
-                                -S,-U,-Y
-    -h, --help
-    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
-                                -M,-N,-n,-!,-0,-P,-S,-U,-Y
-    -r, --rebuild               -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
-                                -P,-S,-U,-x,-Y
-    -v, --version
-
-    OPT                         ARG
-    ---                         ---
-    -0, --uuid=                 <UUID>
-    -1, --id=                   <ID>
-    -2, --bd=                   <BD>
-    -3, --md=                   <MD>
-    -4, --tag=                  <TAG>
-    -5, --tag+=                 <TAG>
-    -6, --tag-=                 <TAG>
-    -7, --reference=            <REF>
-    -8, --reference+=           <REF>
-    -9, --reference-=           <REF>
-    -A, --and
-    -D, --description=          <DESC>
-    -H, --hierarchy=            <HIER>
-    -M, --mod
-    -N, --name=                 <NAME>
-    -n, --non-interactive
-    -!, --not
-    -O, --or
-    -P, --part=                 <PART>
-    -S, --scheme=               <SCHEME>
-    -U, --uri=                  <URI>
-    -x, --index
-    -Y, --authority=            <AUTH>
-
-ARGUMENTS
----------
-    <AUTH>*                     'string'
-    <BD>                        'date'* or 'date;date'. Two special
-                                values: 'first' and 'last'.
-    <DESC>*                     'string'
-    <HIER>*                     '/foo/bar'
-    <ID>*                       'int', 'int,int', 'int-int' (or combi).
-                                Two special values: 'first' and 'last'.
-    <MD>                        'date'* or 'date;date'. Two special
-                                values: 'first' and 'last'.
-    <NAME>*                     'string'
-    <PART>*                     'string'
-    <REF>*                      'int' or 'int,int'
-    <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
-                                'gopher','webdav','webdavs
-    <TAG>*                      'string' or 'string;string;string'
-    <URI>                       'string'
-    <UUID>*                     'uuid'
-
-    *regextype: posix-egrep
-```
-
-### Examples
 ### Enviroment
 
 | **evar**  | **default val** |
@@ -201,6 +213,8 @@ Along with this programme comes an exemplary [configuration file](../master/doc/
     * `hook[<NAME> filter]=<FILTER>`
     * `hook[<NAME> postprocess]=<COMMAND>`
     * `hook[<NAME> footer]=<COMMAND>`
+
+#### Hooks
 
 A hook is a set of connected subscripts of an associative array; a valid hook needs to have a description. They come into play, when there is no regular subcommand on command line (`um [<FILTER>] <HOOK>`). If a hook has no specified filter, the filter on the command line will be used. Hooks are called in the function `__um_query_post()`:
 
