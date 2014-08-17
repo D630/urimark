@@ -1,6 +1,107 @@
-```
-v0.2.9.5
+## urimark v0.3.0.0 [GNU GPLv3]
 
+#### Items
+
+Currently, `urimark` can handle URLs with these protocols: http, https, ftp, ftps, dav, davs, gopher, webdav, webdavs. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
+
+```
+UUID       42712582202233536417
+ID         1
+BD         1408100780 # build date
+MD         1408282460 # last modification date
+SCHEME     https
+AUTHORITY  bitbucket.org
+PART       /
+NAME       Plant your code in the cloud. Watch it grow.
+DESC       web-based hosting service for projects that use either the Mercurial or Git revision control systems.
+HIER       /software/internet/web/crc
+TAGS       hg;mercurial;git;web;code;collaboration;vcs;atlassian
+REF        2
+
+UUID       42720785481233211538
+ID         2
+BD         1408102469
+MD         1408102469
+SCHEME     https
+AUTHORITY  github.com
+PART       /
+NAME       GitHub. Build software better, together.
+DESC       Git repository web-based hosting service which offers revision control and source code management functionality of Git.
+HIER       /software/internet/web/crc
+TAGS       git;web;code;collaboration;vcs
+REF        3;1
+
+UUID       42720785481233211538
+ID         3
+BD         1408102469
+MD         1408102469
+SCHEME     https
+AUTHORITY  github.com
+PART       /blog
+NAME       The GitHub Blog
+DESC       Tech and Info blog
+HIER       /media/blogs/computer
+TAGS       github;git;blog
+REF        2
+```
+
+The storage backend is a combination of comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in your file system:
+
+```
+${URIMARK_DATA_DIR}
+|-- 42712582202233536417
+|   |-- 1
+|   `-- _index
+|-- 42720785481233211538
+|   |-- 2
+|   |-- 3
+|   `-- _index
+`-- _index
+```
+
+```bash
+# cat "${URIMARK_DATA_DIR}/42720785481233211538/2"
+
+uuid=42720785481233211538
+date_build=1408102469
+date_modification=1408102469
+uri_authority="github.com"
+uri_scheme="https"
+uri_scheme_specific_part="/"
+uri_scheme_specific_part_description="Git repository web-based hosting service which offers revision control and source code management functionality of Git."
+uri_scheme_specific_part_hierarchy="/software/internet/web/crc"
+uri_scheme_specific_part_name="GitHub. Build software better, together."
+uri_scheme_specific_part_id=2
+uri_scheme_specific_part_reference[0]=3
+uri_scheme_specific_part_reference[1]=1
+uri_scheme_specific_part_tag[0]="git"
+uri_scheme_specific_part_tag[1]="web"
+uri_scheme_specific_part_tag[2]="code"
+uri_scheme_specific_part_tag[3]="collaboration"
+uri_scheme_specific_part_tag[4]="vcs"
+```
+
+```bash
+$ cat "${URIMARK_DATA_DIR}/42720785481233211538/_index"
+
+"42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
+"42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
+```
+
+```bash
+$ cat "${URIMARK_DATA_DIR}/_index"
+
+"42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
+"42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
+"42712582202233536417"|"1"|"1408100780"|"1408282460"|"https"|"bitbucket.org"|"/"|"Plant your code in the cloud. Watch it grow."|"web-based hosting service for projects that use either the Mercurial or Git revision control systems."|"/software/internet/web/crc"|"hg;mercurial;git;web;code;collaboration;vcs;atlassian"|"2"
+```
+
+#### Hooks
+### Index
+### Install
+### Usage
+
+```
 um (-a|-d|-e|-h|-m|-r|-v)
 
 SUBCOMMANDS
@@ -67,3 +168,59 @@ ARGUMENTS
 
     *regextype: posix-egrep
 ```
+
+### Examples
+### Enviroment
+
+| **evar**  | **default val** |
+| ------------- | ------------- |
+| `URIMARK_CONF_FILE` | `${XDG_CONFIG_HOME:-"${HOME}/.config"}/urimark/urimark.conf` |
+| `URIMARK_DATA_DIR` | `${XDG_DATA_HOME:-"${HOME}/.local/share"}/urimark/data` |
+| `URIMARK_TMP_DIR` | `${TMPDIR:-"/tmp"}/urimark` |
+
+### Configurations
+
+Along with this programme comes an exemplary [configuration file](../master/doc/examples/urimark.conf). The configurations will be sourced after command line parsing. You can set following parameters:
+
+* normal scalar variables
+    * `description_default=`: used with the subcommand `add`. Fallback: `null`
+    * `editor=`: used with the subcommand `edit`. Fallback: `<EDITOR>`
+    * `hierarchy_default=`: used with the subcommand `add`. Fallback: `null`
+    * `hook_default=`: used, when no subcommand has been specified. Fallback: `um_default`
+    * `name_default=`: used with the subcommand `add`. Fallback: `null`
+    * `reference_default=`: used with the subcommand `add`. Fallback: `null`
+    * `tag_default=`: used with the subcommand `add`. Fallback: `null`
+* associative array variables
+    * `hook[<NAME> description]=<STRING>`
+    * `hook[<NAME> header]=<COMMAND>`
+    * `hook[<NAME> preprocess]=<COMMAND>`
+    * `hook[<NAME> filter]=<FILTER>`
+    * `hook[<NAME> postprocess]=<COMMAND>`
+    * `hook[<NAME> footer]=<COMMAND>`
+
+A hook is a set of connected subscripts of an associative array; a valid hook needs to have a description. They come into play, when there is no regular subcommand on command line (`um [<FILTER>] <HOOK>`). If a hook has no specified filter, the filter on the command line will be used. Hooks are called in the function `__um_query_post()`:
+
+```bash
+[[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
+eval "${hook[${hook_choosen} preprocess]} __um_query_post_result ${hook[${hook_choosen} postprocess]}"
+[[ ${hook[${hook_choosen} footer]} ]] && eval "${hook[${hook_choosen} footer]}"
+```
+
+If there is no default hook in the configuration file, the builtin report `um_default` will be used instead:
+
+```bash
+hook[um_default description]="Builtin default report"
+hook[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
+```
+
+### Notes
+
+* Hooks and functions
+
+### TODO
+
+See file [TODO](../master/doc/TODO), which comes along with this programme.
+
+### Bugs & Requests
+
+Report it on https://github.com/D630/urimark .

@@ -1190,7 +1190,7 @@ declare -r \
     predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
 declare -r \
     URIMARK_CONF_FILE=${URIMARK_CONF_FILE:-${predir_confile}/urimark/urimark.conf} \
-    URIMARK_DATA_DIR=${URIMARK_DATA_DIR:-${predir_datadir}/urimark/data}
+    URIMARK_DATA_DIR=${URIMARK_DATA_DIR:-${predir_datadir}/urimark/data_}
 declare -r CDPATH=$URIMARK_DATA_DIR
 declare URIMARK_TMP_DIR=${URIMARK_TMP_DIR:-"${TMPDIR:-/tmp}/urimark"}
 
