@@ -1,5 +1,7 @@
 ## urimark v0.3.0.0 [GNU GPLv3]
 
+TODO
+
 ### Index
 
 1. [Install](#install)
@@ -8,12 +10,19 @@
 4. [Storage](#storage)
 5. [Enviroment](#enviroment)
 6. [Configurations](#configurations)
-  1. [Hooks](#hooks)
+  * [Hooks](#hooks)
 7. [Notes](#notes)
 8. [TODO](#todo)
 9. [Bugs & Requests](#bugs--requests)
 
 ### Install
+
+`urimark`(1) was written on `Debian Testing` with `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`. Explicitly required: `comm`, `cp`, `cut`, `date`, `diff`, `GNU bash >= 4.0`, `GNU find`, `GNU sed`, `GNU xargs`, `grep`, `head`, `md5sum`, `mkdir`, `od`, `rm`, `sort`, `tail`, `tr`, `uniq`.
+
+* Get `urimark`(1) with `$ git clone https://github.com/D630/urimark.git` or
+  download it on https://github.com/D630/urimark/releases
+* Copy the script `um` elsewhere into `<PATH>` and make it executable.
+
 ### Usage
 
 ```
@@ -86,9 +95,11 @@ ARGUMENTS
 
 ### Examples
 
+TODO
+
 ### Storage
 
-Currently, `urimark` can handle URLs with these protocols: http, https, ftp, ftps, dav, davs, gopher, webdav, webdavs. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
+Currently, `urimark`(1) can handle URLs with these protocols: http, https, ftp, ftps, dav, davs, gopher, webdav, webdavs. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
 
 ```
 # $ um info
@@ -189,7 +200,7 @@ uri_scheme_specific_part_tag[4]="vcs"
 ### Enviroment
 
 | **evar**  | **default val** |
-| ------------- | ------------- |
+| --------- | --------------- |
 | `URIMARK_CONF_FILE` | `${XDG_CONFIG_HOME:-"${HOME}/.config"}/urimark/urimark.conf` |
 | `URIMARK_DATA_DIR` | `${XDG_DATA_HOME:-"${HOME}/.local/share"}/urimark/data` |
 | `URIMARK_TMP_DIR` | `${TMPDIR:-"/tmp"}/urimark` |
@@ -216,13 +227,15 @@ Along with this programme comes an exemplary [configuration file](../master/doc/
 
 #### Hooks
 
-A hook is a set of connected subscripts of an associative array; a valid hook needs to have a description. They come into play, when there is no regular subcommand on command line (`um [<FILTER>] <HOOK>`). If a hook has no specified filter, the filter on the command line will be used. Hooks are called in the function `__um_query_post()`:
+A hook is a set of connected subscripts of an associative array called `hook`; a valid hook needs to have a name (string without space character) and a description. Hooks come into play, when there is no regular subcommand on command line. If a hook has no specified filter, the filter on the command line will be used (`um [<FILTER>] <HOOK>`; <FILTER>: `-0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,-S,-U,-Y`). Hooks will be called in the function `__um_query_post()`:
 
 ```bash
 [[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
 eval "${hook[${hook_choosen} preprocess]} __um_query_post_result ${hook[${hook_choosen} postprocess]}"
 [[ ${hook[${hook_choosen} footer]} ]] && eval "${hook[${hook_choosen} footer]}"
 ```
+
+Since hooks work with `eval`, you need to care about the right quoting. It is also possible to declare functions in the configuration file and to use them as command in the value of the arrays.
 
 If there is no default hook in the configuration file, the builtin report `um_default` will be used instead:
 
@@ -231,9 +244,39 @@ hook[um_default description]="Builtin default report"
 hook[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
 ```
 
+The exemplary [configuration file](../master/doc/examples/urimark.conf) declares following hooks:
+
+| **Name**  | **Description** |
+| --------- | --------------- |
+| `abso` | `Report: Absolute Path` |
+| `acloud` | `Report: Cloud of authorities` |
+| `browse` | `Interaction: Browse URI with urlview` |
+| `fmod` | `Report: First 10 modified records with ID,MD,URI` |
+| `hcloud` | `Report: Cloud of hierarchies` |
+| `ids` | `Report: Show first and last id` |
+| `__info` | `Report: All with line break` |
+| `_info` | `Report: All with line break, labels and empty lines` |
+| `info` | `Report: All with line break, labels, empty lines and formatted with column` |
+| `itags` | `Report: ID Tags` |
+| `iuri` | `Report: ID URI` |
+| `__list` | `Report: All as list and space as delimiter` |
+| `_list` | `Report: All as list with labels and space as delimiter` |
+| `list` | `Report: All with labels and formatted with column` |
+| `lmod` | `Report: Last 10 modified records with ID,MD,URI` |
+| `_meta` | `Report: ID, Namen, Desc, Hierarchy, Tags and References and space as delimiter` |
+| `newest` | `Report: Last 10 newest records: ID,BD,URI` |
+| `number` | `Report: Number of Authorities and IDs` |
+| `oldest` | `Report: Last 10 oldest records: ID,BD,URI` |
+| `pcloud` | `Report: Cloud of parts` |
+| `rcloud` | `Report: Cloud of references` |
+| `scloud` | `Report: Cloud of schemes` |
+| `tcloud` | `Report: Cloud of tags` |
+| `_tlist` | `Report: ID, MD, BD and formatted with column` |
+| `uri` | `Report: URI` |
+
 ### Notes
 
-* Hooks and functions
+TODO
 
 ### TODO
 
@@ -241,4 +284,4 @@ See file [TODO](../master/doc/TODO), which comes along with this programme.
 
 ### Bugs & Requests
 
-Report it on https://github.com/D630/urimark .
+Report it on https://github.com/D630/urimark
