@@ -135,8 +135,84 @@ $ um id="first" or id="2" or id=last
 
 #### Adding
 
-To add records in our database, we need at least to specify an URI. There are two ways. The first method is interactive adding in a tty with a simple `um add`:
+To add records in our database, we need at least to specify an URI. There are two ways. The first method is interactive adding in a tty with a simple `um add`; when we want to specify more than one tag or reference, we need then to separate them with semicolon (`;`). The second way could look like this:
 
+```bash
+$ um add \
+    uri=https://bitbucket.org \
+    name="Plant your code in the cloud. Watch it grow." \
+    desc="web-based hosting service for projects that use either the Mercurial or Git revision control systems." \
+    hier="/software/internet/web/crc" \
+    tag="hg;mercurial;git;web;code;collaboration;vcs;atlassian" \
+    ref=2
+New authority has been recorded at file:///home/user/share/urimark/data/9535008412671455610 .
+New URI with id 1 has been recorded.
+Index is beeing rebuild...
+Done.
+```
+
+If we try to add an existing URI, `urimark`(1) exits without recording:
+
+```bash
+$ um add uri=https://bitbucket.org
+URI 'https://bitbucket.org' has already been recorded.
+```
+
+If there is already a record with the same authority, we get:
+
+```bash
+$ um add uri=https://bitbucket.org/features
+Authority has already been recorded at file:///home/user/share/urimark/data/9535008412671455610 .
+New URI with id 4 has been recorded.
+Index is beeing rebuild...
+Done.
+```
+
+Every new URI will get an `id`. In doing so, `urimark`(1) tries to assign the next number by looking for gaps in the sequence of ids:
+
+```bash
+$ um
+42720785481233211538 2
+42720785481233211538 3
+9535008412671455610 1
+9535008412671455610 4
+$ um del -n id=1
+Records have been deleted.
+Index is beeing rebuild...
+Done.
+$ um
+42720785481233211538 2
+42720785481233211538 3
+9535008412671455610 4
+$ um add uri=https://bitbucket.org
+Authority has already been recorded at file:///home/user/share/urimark/data/9535008412671455610 .
+New URI with id 1 has been recorded.
+Index is beeing rebuild...
+Done.
+$ um
+42720785481233211538 2
+42720785481233211538 3
+9535008412671455610 1
+9535008412671455610 4
+```
+
+If we do not specify all allowed metadata, the record will be filled with placeholders, which may be declared in the configuration file:
+
+```bash
+$ um id=1 info
+UUID       9535008412671455610
+ID         1
+BD         1408309794
+MD         1408309794
+SCHEME     https
+AUTHORITY  bitbucket.org
+PART       /
+NAME       null
+DESC       null
+HIER       null
+TAGS       null
+REF        null
+```
 
 #### Filtering and Hooks
 #### Editing
