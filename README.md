@@ -8,7 +8,7 @@
 4. [Storage](#storage)
 5. [Enviroment](#enviroment)
 6. [Configurations](#configurations)
-6.1. [Hooks](#hooks)
+6.1. [Hooks](##hooks)
 7. [Notes](#notes)
 8. [TODO](#todo)
 9. [Bugs & Requests](#bugs--requests)
