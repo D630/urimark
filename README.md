@@ -227,7 +227,7 @@ Along with this programme comes an exemplary [configuration file](../master/doc/
 
 #### Hooks
 
-A hook is a set of connected subscripts of an associative array called `hook`; a valid hook needs to have a name (string without space character) and a description. Hooks come into play, when there is no regular subcommand on command line. If a hook has no specified filter, the filter on the command line will be used (`um [<FILTER>] <HOOK>`; <FILTER>: `-0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,-S,-U,-Y`). Hooks will be called in the function `__um_query_post()`:
+A hook is a set of connected subscripts of an associative array called `hook`; a valid hook needs to have a name (string without space character) and a description. Hooks come into play, when there is no regular subcommand on command line. If a hook has no specified filter, the filter on the command line will be used (`um [<FILTER>] <HOOK>`; `<FILTER>`: `-0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,-S,-U,-Y`). Hooks will be called in the function `__um_query_post()`:
 
 ```bash
 [[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
