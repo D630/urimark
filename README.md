@@ -4,7 +4,7 @@
 
 Currently, `urimark` can handle URLs with these protocols: http, https, ftp, ftps, dav, davs, gopher, webdav, webdavs. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
 
-```bash
+```
 # $ um info
 
 UUID       42712582202233536417
@@ -85,14 +85,14 @@ uri_scheme_specific_part_tag[3]="collaboration"
 uri_scheme_specific_part_tag[4]="vcs"
 ```
 
-```bash
+```
 # $ cat "${URIMARK_DATA_DIR}/42720785481233211538/_index"
 
 "42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
 "42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
 ```
 
-```bash
+```
 # $ cat "${URIMARK_DATA_DIR}/_index"
 
 "42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
