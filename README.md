@@ -85,10 +85,10 @@ ARGUMENTS
                                 values: 'first' and 'last'
     <NAME>*                     'string'
     <PART>*                     'string'
-    <REF>*                      'int' or 'int;int'
+    <REF>*                      'int' or 'int;int;n'
     <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
                                 'gopher','webdav','webdavs
-    <TAG>*                      'string' or 'string;string;string'
+    <TAG>*                      'string' or 'string;string;n'
     <URI>                       'string'
     <UUID>*                     'uuid'
 

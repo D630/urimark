@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.6" ; }
+__um_version() { echo "0.2.9.7" ; }
 
 __um_usage()
 {
@@ -101,10 +101,10 @@ ARGUMENTS
                                 values: 'first' and 'last'
     <NAME>*                     'string'
     <PART>*                     'string'
-    <REF>*                      'int' or 'int;int'
+    <REF>*                      'int' or 'int;int;n'
     <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
                                 'gopher','webdav','webdavs
-    <TAG>*                      'string' or 'string;string;string'
+    <TAG>*                      'string' or 'string;string;n'
     <URI>                       'string'
     <UUID>*                     'uuid'
 
@@ -123,12 +123,16 @@ __um_query()
         query_uri_authority= \
         query_uri_schemes= \
         query_uri_schemes_specific_parts= \
+        r= \
+        t= \
         time= \
         val= \
         var=
 
     declare -a \
         ids=() \
+        refs=() \
+        tags=() \
         times=()
 
     declare -gA operators
@@ -409,16 +413,48 @@ __um_query()
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     tag)
-                            __um_query_parse_val
+                            for t in ${val//;/ }
+                            do
+                                if [[ $t =~ ^\^ ]]
+                                then
+                                    t=${t#^}
+                                else
+                                    t=${t/#/.\*}
+                                fi
+                                if [[ $t =~ \$$ ]]
+                                then
+                                    t=${t/%$/}
+                                else
+                                    t=${t/%/.\*}
+                                fi
+                                tags+=("$t")
+                            done
+                            printf -v pattern '%s|' "${tags[@]}"
                             egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){10}\"(.*${pattern}.*)\"\(\|\"[^\"\|]*\"){1}$" \
+                                    -e "^(\"[^\"\|]*\"\|){10}\"([^\"\|]*;|)(${pattern%|*})(;[^\"\|]*|)\"(\|\"[^\"\|]*\"){1}$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
                     reference)
-                            __um_query_parse_val
+                            for r in ${val//;/ }
+                            do
+                                if [[ $r =~ ^\^ ]]
+                                then
+                                    r=${r#^}
+                                else
+                                    r=${r/#/.\*}
+                                fi
+                                if [[ $r =~ \$$ ]]
+                                then
+                                    r=${r/%$/}
+                                else
+                                    r=${r/%/.\*}
+                                fi
+                                refs+=("$r")
+                            done
+                            printf -v pattern '%s|' "${refs[@]}"
                             egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){11}\"(.*${pattern}.*)\"$" \
+                                    -e "^(\"[^\"\|]*\"\|){11}\"([^\"\|]*;|)(${pattern%|*})(;[^\"\|]*|)\"$" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
@@ -435,6 +471,8 @@ __um_query()
                             ;;
                 esac
                 ids=()
+                refs=()
+                tags=()
                 times=()
                 not=
             fi
