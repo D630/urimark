@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.10" ; }
+__um_version() { echo "0.2.9.11" ; }
 
 __um_usage()
 {
@@ -50,14 +50,14 @@ SUBCOMMANDS
     ACTION                      OPT
     ------                      ---
     -a, --add                   -4,-7,-D,-H,-N,-U
-    -d, --delete                -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+    -d, --delete, --del         -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
                                 -P,-S,-U,-Y
     -e, --edit                  -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,
                                 -S,-U,-Y
     -h, --help
-    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
+    -m, --modify, --modi        -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
                                 -M,-N,-n,-!,-0,-P,-S,-U,-Y
-    -r, --rebuild               -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+    -r, --rebuild, --reb        -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
                                 -P,-S,-U,-x,-Y
     -v, --version
 
@@ -70,22 +70,22 @@ SUBCOMMANDS
     -4, --tag=                  <TAG>
     -5, --tag+=                 <TAG>
     -6, --tag-=                 <TAG>
-    -7, --reference=            <REF>
-    -8, --reference+=           <REF>
-    -9, --reference-=           <REF>
+    -7, --reference=, --ref=    <REF>
+    -8, --reference+=, --ref+=  <REF>
+    -9, --reference-=, --ref-=  <REF>
     -A, --and
-    -D, --description=          <DESC>
-    -H, --hierarchy=            <HIER>
+    -D, --description=, --desc= <DESC>
+    -H, --hierarchy=, --hier=   <HIER>
     -M, --mod
     -N, --name=                 <NAME>
-    -n, --non-interactive
+    -n, --non-interactive, --nv
     -!, --not
     -O, --or
     -P, --part=                 <PART>
     -S, --scheme=               <SCHEME>
     -U, --uri=                  <URI>
     -x, --index
-    -Y, --authority=            <AUTH>
+    -Y, --authority=, --auth=   <AUTH>
 
 ARGUMENTS
 ---------
@@ -1252,26 +1252,36 @@ do
     case $arg in
         add)                args="${args}-a "                            ;;
         and)                args="${args}-A "                            ;;
+        auth=?*)                                                         ;&
         authority=?*)       args="${args}-Y ${delim}${arg#*=}${delim} "  ;;
         bd=?*)              args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
+        del=?*)                                                          ;&
         delete)             args="${args}-d "                            ;;
+        desc=?*)                                                         ;&
         description=?*)     args="${args}-D ${delim}${arg#*=}${delim} "  ;;
         edit)               args="${args}-e "                            ;;
         help)               args="${args}-h "                            ;;
+        hier=?*)                                                         ;&
         hierarchy=?*)       args="${args}-H ${delim}${arg#*=}${delim} "  ;;
         id=?*)              args="${args}-1 ${delim}${arg#*=}${delim} "  ;;
         index)              args="${args}-x "                            ;;
         md=?*)              args="${args}-3 ${delim}${arg#*=}${delim} "  ;;
         mod)                args="${args}-M "                            ;;
+        modi)                                                            ;&
         modify)             args="${args}-m "                            ;;
         name=?*)            args="${args}-N ${delim}${arg#*=}${delim} "  ;;
+        nv)                                                              ;&
         non-interactive)    args="${args}-n "                            ;;
         not)                args="${args}-! "                            ;;
         or)                 args="${args}-O "                            ;;
         part=?*)            args="${args}-P ${delim}${arg#*=}${delim} "  ;;
+        reb)                                                             ;&
         rebuild)            args="${args}-r "                            ;;
+        ref=?*)                                                          ;&
         reference=?*)       args="${args}-7 ${delim}${arg#*=}${delim} "  ;;
+        ref+=?*)                                                         ;&
         reference+=?*)      args="${args}-8 ${delim}${arg#*+=}${delim} " ;;
+        ref-=?*)                                                         ;&
         reference-=?*)      args="${args}-9 ${delim}${arg#*-=}${delim} " ;;
         scheme=?*)          args="${args}-S ${delim}${arg#*=}${delim} "  ;;
         tag=?*)             args="${args}-4 ${delim}${arg#*=}${delim} "  ;;
@@ -1280,17 +1290,22 @@ do
         uri=?*)             args="${args}-U ${delim}${arg#*=}${delim} "  ;;
         uuid=?*)            args="${args}-0 ${delim}${arg#*=}${delim} "  ;;
         version)            args="${args}-v "                            ;;
+        auth=|\
         authority=|\
         bd=|\
-        cloud=|\
+        desc=|\
         description=|\
+        hier=|\
         hierarchy=|\
         id=|\
         md=|\
         name=|\
         part=|\
+        ref=|\
         reference=|\
+        ref-=|\
         reference-=|\
+        ref+=|\
         reference+=|\
         scheme=|\
         tag=|\

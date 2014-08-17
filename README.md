@@ -34,14 +34,14 @@ SUBCOMMANDS
     ACTION                      OPT
     ------                      ---
     -a, --add                   -4,-7,-D,-H,-N,-U
-    -d, --delete                -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+    -d, --delete, --del         -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
                                 -P,-S,-U,-Y
     -e, --edit                  -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,
                                 -S,-U,-Y
     -h, --help
-    -m, --modify                -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
+    -m, --modify, --modi        -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
                                 -M,-N,-n,-!,-0,-P,-S,-U,-Y
-    -r, --rebuild               -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
+    -r, --rebuild, --reb        -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
                                 -P,-S,-U,-x,-Y
     -v, --version
 
@@ -54,22 +54,22 @@ SUBCOMMANDS
     -4, --tag=                  <TAG>
     -5, --tag+=                 <TAG>
     -6, --tag-=                 <TAG>
-    -7, --reference=            <REF>
-    -8, --reference+=           <REF>
-    -9, --reference-=           <REF>
+    -7, --reference=, --ref=    <REF>
+    -8, --reference+=, --ref+=  <REF>
+    -9, --reference-=, --ref-=  <REF>
     -A, --and
-    -D, --description=          <DESC>
-    -H, --hierarchy=            <HIER>
+    -D, --description=, --desc= <DESC>
+    -H, --hierarchy=, --hier=   <HIER>
     -M, --mod
     -N, --name=                 <NAME>
-    -n, --non-interactive
+    -n, --non-interactive, --nv
     -!, --not
     -O, --or
     -P, --part=                 <PART>
     -S, --scheme=               <SCHEME>
     -U, --uri=                  <URI>
     -x, --index
-    -Y, --authority=            <AUTH>
+    -Y, --authority=, --auth=   <AUTH>
 
 ARGUMENTS
 ---------
