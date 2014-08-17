@@ -98,11 +98,55 @@ ARGUMENTS
 
 ### Examples
 
-TODO
+#### Syntax
+
+Since `urimark`(1) works with `getopts` and a long commad line syntax, we are relatively free to choose our favourite spelling. We can not only write all long subcommands and options without double hypen (`--`): instead of `--add` and `--id=` we may use `add` resp. `id=`; but also mix the syntaxes. The following means the same with different spelling:
+
+```bash
+$ um -0 42720785481233211538 -A -Y github.com -! -1 2
+$ um --uuid=42720785481233211538 --and --authority=github.com --not --id=2
+$ um --uuid=42720785481233211538 --and --auth=github.com --not --id=2
+$ um uuid=42720785481233211538 and authority=github.com not id=2
+$ um uuid=42720785481233211538 and auth=github.com not id=2
+$ um uuid=42720785481233211538 -A -Y github.com -! id=2
+```
+
+Unlike GNU-like syntax, we can not write:
+
+```bash
+$ um -042720785481233211538 -A -Ygithub.com -! -12
+```
+
+But we may change the order of arguments when using subcommands, for example:
+
+```bash
+$ um add uri=https://github.com/ tag="git;web;code;collaboration;vcs"
+$ um tag="git;web;code;collaboration;vcs" add uri=https://github.com/
+```
+
+And split up some options:
+
+```bash
+$ um add uri=https://github.com/ tag="git;web" tag="code;collaboration" tag=vcs
+$ um id="first;2" id=last
+$ um id="first;2" or id=last
+$ um id="first" or id="2" or id=last
+```
+
+#### Adding
+
+To add records in our database, we need at least to specify an URI. There are two ways. The first method is interactive adding in a tty with a simple `um add`:
+
+
+#### Filtering and Hooks
+#### Editing
+#### Modifying
+#### Deleting
+#### Rebuilding
 
 ### Storage
 
-Currently, `urimark`(1) can handle URLs with these protocols: http, https, ftp, ftps, dav, davs, gopher, webdav, webdavs. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
+Currently, `urimark`(1) can handle URLs with these protocols: `http`, `https`, `ftp`, `ftps`, `dav`, `davs`, `gopher`, `webdav`, `webdavs`. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
 
 ```
 # $ um info
@@ -147,7 +191,7 @@ TAGS       github;git;blog
 REF        2
 ```
 
-The storage backend is a combination of comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in your file system:
+The storage backend is a combination of comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in our file system:
 
 ```
 # $ tree -a -P "*" -n --noreport -L 20 --charset=ascii "$PWD"
@@ -210,7 +254,7 @@ uri_scheme_specific_part_tag[4]="vcs"
 
 ### Configurations
 
-Along with this programme comes an exemplary [configuration file](../master/doc/examples/urimark.conf). The configurations will be sourced after command line parsing. You can set following parameters:
+Along with this programme comes an exemplary [configuration file](../master/doc/examples/urimark.conf). The configurations will be sourced after command line parsing. We can set following parameters:
 
 * normal scalar variables
     * `description_default=`: used with the subcommand `add`. Fallback: `null`
@@ -233,12 +277,12 @@ Along with this programme comes an exemplary [configuration file](../master/doc/
 A hook is a set of connected subscripts of an associative array called `hook`; a valid hook needs to have a name (string without space character) and a description. Hooks come into play, when there is no regular subcommand on command line. If a hook has no specified filter, the filter on the command line will be used (`um [<FILTER>] <HOOK>`; `<FILTER>`: `-0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-O,-P,-S,-U,-Y`). Hooks will be called in the function `__um_query_post()`:
 
 ```bash
-[[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
-eval "${hook[${hook_choosen} preprocess]} __um_query_post_result ${hook[${hook_choosen} postprocess]}"
-[[ ${hook[${hook_choosen} footer]} ]] && eval "${hook[${hook_choosen} footer]}"
+[[ ${hook[${hook_chosen} header]} ]] && eval "${hook[${hook_chosen} header]}"
+eval "${hook[${hook_chosen} preprocess]} __um_query_post_result ${hook[${hook_chosen} postprocess]}"
+[[ ${hook[${hook_chosen} footer]} ]] && eval "${hook[${hook_chosen} footer]}"
 ```
 
-Since hooks work with `eval`, you need to care about the right quoting. It is also possible to declare functions in the configuration file and to use them as command in the value of the arrays.
+Since hooks work with `eval`, we need to take care about the correct quoting. But it is also possible to declare functions in the configuration file and to use them as command in the value of the arrays. In that case, we can proceed as usual.
 
 If there is no default hook in the configuration file, the builtin report `um_default` will be used instead:
 

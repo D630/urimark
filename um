@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.11" ; }
+__um_version() { echo "0.2.9.12" ; }
 
 __um_usage()
 {
@@ -569,9 +569,9 @@ __um_query_post()
         __um_query_post_result() { __um_query_post_or ; }
     fi
 
-    [[ ${hook[${hook_choosen} header]} ]] && eval "${hook[${hook_choosen} header]}"
-    eval "${hook[${hook_choosen} preprocess]} __um_query_post_result ${hook[${hook_choosen} postprocess]}"
-    [[ ${hook[${hook_choosen} footer]} ]] && eval "${hook[${hook_choosen} footer]}"
+    [[ ${hook[${hook_chosen} header]} ]] && eval "${hook[${hook_chosen} header]}"
+    eval "${hook[${hook_chosen} preprocess]} __um_query_post_result ${hook[${hook_chosen} postprocess]}"
+    [[ ${hook[${hook_chosen} footer]} ]] && eval "${hook[${hook_chosen} footer]}"
 }
 
 __um_add()
@@ -663,7 +663,7 @@ __um_add()
     IFS='/' read -r authority part <<< "${uri##*://}"
     part=/${part%%/}
 
-    read -r auuid aid < <(hook_choosen=um_default ; __um_query authority=^${authority}$ 2>/dev/null && \
+    read -r auuid aid < <(hook_chosen=um_default ; __um_query authority=^${authority}$ 2>/dev/null && \
         __um_query_post 2>/dev/null)
     if [[ $auuid && $aid ]]
     then
@@ -793,7 +793,7 @@ uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
             else
                 printf '%s\n' "Data set with id ${eid} has not been modified." 1>&2
             fi
-        done < <(hook_choosen=um_default ; __um_query "$@" && __um_query_post)
+        done < <(hook_chosen=um_default ; __um_query "$@" && __um_query_post)
         [[ $modification == modification ]] &&
         {
             dir_stack=($(dirs -l -p))
@@ -834,7 +834,7 @@ __um_delete()
                     *)      continue               ;;
                 esac
             fi
-        done < <(hook_choosen=um_default ; __um_query "$@" >/dev/null && __um_query_post)
+        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post)
         if ((${#deletion[@]} != 0))
         then
             for d in "${deletion[@]}"
@@ -961,7 +961,7 @@ __um_modify()
                             ;;
                 esac
             fi
-        done < <(hook_choosen=um_default ; __um_query "${patterns[@]}" >/dev/null && __um_query_post)
+        done < <(hook_chosen=um_default ; __um_query "${patterns[@]}" >/dev/null && __um_query_post)
         if ((${#modification[@]} != 0))
         then
             dir_stack=($(dirs -l -p))
@@ -1007,7 +1007,7 @@ __um_rebuild()
                     *)      continue                    ;;
                 esac
             fi
-        done < <(hook_choosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d '/' -f 1 | sort | uniq)
+        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d '/' -f 1 | sort | uniq)
         if ((${#DIRSTACK[@]} > 1 ))
         then
             dir_stack=($(dirs -l -p))
@@ -1083,6 +1083,12 @@ __um_rebuild_index()
             printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" >&3
         done
         exec 3<&-
+        if [[ $(stat -c %s "${dir}/_index" 2>/dev/null) -lt 2 ]]
+        then
+            rm -- "${dir}/_index"
+        else
+            :
+        fi
     done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort | uniq)
 }
 
@@ -1255,7 +1261,7 @@ do
         auth=?*)                                                         ;&
         authority=?*)       args="${args}-Y ${delim}${arg#*=}${delim} "  ;;
         bd=?*)              args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
-        del=?*)                                                          ;&
+        del)                                                             ;&
         delete)             args="${args}-d "                            ;;
         desc=?*)                                                         ;&
         description=?*)     args="${args}-D ${delim}${arg#*=}${delim} "  ;;
@@ -1402,7 +1408,7 @@ name_default=${name_default:-null}
 hook[um_default description]="Builtin default report"
 hook[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
 
-declare hook_choosen=
+declare hook_chosen=
 
 while (($# > 0))
 do
@@ -1416,7 +1422,7 @@ do
         *)
             if [[ ${hook[${1} description]} ]]
             then
-                hook_choosen=$1
+                hook_chosen=$1
                 shift 1
             else
                 { printf '%s\n' "Unknown parameter: '${1}'." 1>&2 ; exit 1 ; }
@@ -1424,9 +1430,9 @@ do
     esac
 done
 
-hook_choosen=${hook_choosen:-$hook_default}
-[[ ${hook[${hook_choosen} filter]} && ${#patterns[@]} -eq 0 ]] && \
-    patterns=(${hook[${hook_choosen} filter]})
+hook_chosen=${hook_chosen:-$hook_default}
+[[ ${hook[${hook_chosen} filter]} && ${#patterns[@]} -eq 0 ]] && \
+    patterns=(${hook[${hook_chosen} filter]})
 
 case $action in
     add)
@@ -1440,10 +1446,10 @@ case $action in
     delete)
             __um_delete "${patterns[@]}" &&
             {
-                __um_delete_empty_dirs
                 __um_rebuild_index &&
                 __um_cat_indexes &&
                 echo "Done." 1>&2
+                __um_delete_empty_dirs
             }
             ;;
     edit)
