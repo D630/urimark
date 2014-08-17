@@ -33,9 +33,13 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.5" ; }
+__um_version() { echo "0.2.9.6" ; }
 
-__um_usage() { printf 'um (-a|-d|-e|-h|-m|-r|-v)' ; }
+__um_usage()
+{
+    printf 'um (-a|-d|-e|-h|-m|-r|-v) [<OPT>...]
+um [<OPT>...] [<HOOK>]'
+}
 
 __um_help()
 {
@@ -87,23 +91,24 @@ ARGUMENTS
 ---------
     <AUTH>*                     'string'
     <BD>                        'date'* or 'date;date'. Two special
-                                values: 'first' and 'last'.
+                                values: 'first' and 'last'
     <DESC>*                     'string'
-    <HIER>*                     '/foo/bar'
+    <HIER>*                     '/foo/bar/n'
+    <HOOK>                      'string' without space character
     <ID>*                       'int', 'int,int', 'int-int' (or combi).
-                                Two special values: 'first' and 'last'.
+                                Two special values: 'first' and 'last'
     <MD>                        'date'* or 'date;date'. Two special
-                                values: 'first' and 'last'.
+                                values: 'first' and 'last'
     <NAME>*                     'string'
     <PART>*                     'string'
-    <REF>*                      'int' or 'int,int'
+    <REF>*                      'int' or 'int;int'
     <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
                                 'gopher','webdav','webdavs
     <TAG>*                      'string' or 'string;string;string'
     <URI>                       'string'
     <UUID>*                     'uuid'
 
-    *regextype: posix-egrep
+    *regextype: posix-egrep (not used with -a)
 "
 }
 
