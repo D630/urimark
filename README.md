@@ -1,6 +1,14 @@
 ## urimark v0.3.0.0 [GNU GPLv3]
 
-TODO
+`urimark`(1) is a stupid shell script, that acts like a simple bookmark manager on the command line,
+* using `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`
+* working with 12 data fields
+* storing them in comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in the file system
+* providing subcommands to add, edit, modify, delete and rebuild records
+* to query and filter them with regexes (type: posix-egrep) and minimal search operators
+* and to postprocess and report query outputs with freely configurable hooks
+
+The main goal is to store records in plain text files and to manipulate them with standard Unix utilities, as fast as [possible](#todo).
 
 ### Index
 
@@ -23,7 +31,7 @@ TODO
 
 ### Install
 
-`urimark`(1) was written on `Debian Testing` with `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`. Explicitly required: `comm`, `cp`, `cut`, `date`, `diff`, `GNU bash >= 4.0`, `GNU find`, `GNU sed`, `GNU xargs`, `grep`, `head`, `md5sum`, `mkdir`, `od`, `rm`, `sort`, `stat`, tail`, `tr`, `uniq`.
+Explicitly required: `comm`, `cp`, `cut`, `date`, `diff`, `GNU bash >= 4.0`, `GNU find`, `GNU sed`, `GNU xargs`, `grep`, `head`, `md5sum`, `mkdir`, `od`, `rm`, `sort`, `stat`, `tail`, `tr`, `uniq`.
 
 * Get `urimark`(1) with `$ git clone https://github.com/D630/urimark.git` or
   download it on https://github.com/D630/urimark/releases
@@ -101,7 +109,7 @@ ARGUMENTS
     <URI>                       'string'
     <UUID>*                     'uuid'
 
-    *regextype: posix-egrep (not used with -a)
+    *regextype: posix-egrep (not used with -a or options after -M)
 ```
 
 ### Examples
@@ -143,7 +151,7 @@ $ um id="first" or id="2" or id=last
 
 #### Adding
 
-To add records to our database, we need at least to specify an URI. There are two ways. The first method is interactive adding in a tty with a simple `um add`; when we want to specify more than one tag or reference, we need then to separate them with semicolon (`;`). The second way could look like this:
+To add records to our database, we need at least to specify an URI. There are two ways to do this. The first method is interactive adding in a tty with a simple `um add`; when we want to specify more than one tag or reference, we need then to separate them with semicolon (`;`). The second way could look like this:
 
 ```bash
 $ um add \
