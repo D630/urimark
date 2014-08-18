@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.12" ; }
+__um_version() { echo "0.2.9.13" ; }
 
 __um_usage()
 {
@@ -535,16 +535,14 @@ __um_query_post()
 {
     if [[ ${operators[and]} -eq 1 ]]
     then
-        __um_query_post_and() { sort "${URIMARK_TMP_DIR}/and1" | uniq ; }
+        __um_query_post_and() { sort "${URIMARK_TMP_DIR}/and1" ; }
     elif [[ ${operators[and]} -gt 1 ]]
     then
         __um_query_post_and()
         {
             diff --unchanged-group-format='%=' \
                     --old-group-format='' --new-group-format='' \
-                    --changed-group-format='' --from-file ${URIMARK_TMP_DIR}/and* | \
-                sort | \
-                uniq
+                    --changed-group-format='' --from-file ${URIMARK_TMP_DIR}/and*
         }
     fi
 
@@ -552,21 +550,19 @@ __um_query_post()
     then
         __um_query_post_or()
         {
-            comm -12 <(sort "${URIMARK_TMP_DIR}/or1") <(__um_query_post_and) | \
-                sort -t '|' -k 2.2n | \
-                uniq
+            comm -12 <(sort "${URIMARK_TMP_DIR}/or1" | uniq) <(__um_query_post_and | uniq)
         }
     elif ((${operators[or]}))
     then
-        __um_query_post_or() { sort -t '|' -k 2.2n "${URIMARK_TMP_DIR}/or1" | uniq ; }
+        __um_query_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
     fi
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
         __um_query_post_result() { comm -23 <(__um_query_post_or) \
-            <(sort -t '|' -k 2.2n  "${URIMARK_TMP_DIR}/not1" | uniq) ; }
+            <(sort "${URIMARK_TMP_DIR}/not1" | uniq) | sort -t '|' -k 2.2n ; }
     else
-        __um_query_post_result() { __um_query_post_or ; }
+        __um_query_post_result() { __um_query_post_or | sort -t '|' -k 2.2n ; }
     fi
 
     [[ ${hook[${hook_chosen} header]} ]] && eval "${hook[${hook_chosen} header]}"

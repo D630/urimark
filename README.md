@@ -17,7 +17,7 @@ TODO
 
 ### Install
 
-`urimark`(1) was written on `Debian Testing` with `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`. Explicitly required: `comm`, `cp`, `cut`, `date`, `diff`, `GNU bash >= 4.0`, `GNU find`, `GNU sed`, `GNU xargs`, `grep`, `head`, `md5sum`, `mkdir`, `od`, `rm`, `sort`, `tail`, `tr`, `uniq`.
+`urimark`(1) was written on `Debian Testing` with `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`. Explicitly required: `comm`, `cp`, `cut`, `date`, `diff`, `GNU bash >= 4.0`, `GNU find`, `GNU sed`, `GNU xargs`, `grep`, `head`, `md5sum`, `mkdir`, `od`, `rm`, `sort`, `stat`, tail`, `tr`, `uniq`.
 
 * Get `urimark`(1) with `$ git clone https://github.com/D630/urimark.git` or
   download it on https://github.com/D630/urimark/releases
@@ -26,6 +26,8 @@ TODO
 ### Usage
 
 ```
+# $ um -h
+
 um (-a|-d|-e|-h|-m|-r|-v) [<OPT>...]
 um [<OPT>...] [<HOOK>]
 
@@ -135,7 +137,7 @@ $ um id="first" or id="2" or id=last
 
 #### Adding
 
-To add records in our database, we need at least to specify an URI. There are two ways. The first method is interactive adding in a tty with a simple `um add`; when we want to specify more than one tag or reference, we need then to separate them with semicolon (`;`). The second way could look like this:
+To add records to our database, we need at least to specify an URI. There are two ways. The first method is interactive adding in a tty with a simple `um add`; when we want to specify more than one tag or reference, we need then to separate them with semicolon (`;`). The second way could look like this:
 
 ```bash
 $ um add \
@@ -214,7 +216,65 @@ TAGS       null
 REF        null
 ```
 
-#### Filtering and Hooks
+#### Filtering
+
+To have access to the database, there are the functions `__um_query()`, `__um_query_binary()` and `__um_query_post()`. A query will be initialized with filters and then manipulated with hooks. Filtering is the way to select records; hooking is the method to postprocess (cutting, piping, redirecting etc.) Internally, `urimarks` (1) uses only one declared hook. If there is no configuration in the conf file and specification on command line, this default hook will also be used to print all records and cut the `uuid` and `id` fields of them. Strictly speaking, a simple `um` is the same like `um um_default`: a hook, that acts like a report with no specified filter.
+
+The available filters are these command line options: `-0,-1,-2,-3,-4,-7,-A,-D,-H,-N,-!,-O,-P,-S,-U,-Y`. They have following characteristics:
+* Most of them are regextyped (posix-egrep)
+* `id`, `bd`, `md`, `tag` and `reference` differ from the others because of the syntax of their values
+* To have basic search possibilities, we have the operators: `and`, `or` and `not`
+* Filters on command line may overwright filters, which are associated with hooks
+
+Some basic filtering would be:
+
+```bash
+$ um scheme=https
+$ um auth=^github.com$
+$ um part=^/$
+$ um uri=https://github.com/blog
+$ um hierarchy=/software/internet$
+$ um uuid=42712582202233536417
+```
+
+Filtering with IDs:
+
+```bash
+$ um id=^1$
+$ um id=^1$\;^3$
+$ um id=^1$\;^2$\;^3$
+$ um id=^1$\-^3$
+$ um id=^first$\-^last$
+```
+
+Filtering with dates (expressions of `date`(1) with option `--date` may be used):
+
+```bash
+$ um bd=^first$
+$ um bd=^@1408102469$
+$ um bd=^2014-08-17$
+$ um bd=yesterday\;today
+```
+
+Filtering with tags:
+
+```bash
+$ um tag=^code$
+$ um tag=^cod
+$ um tag=^cod;web
+```
+
+Filtering in combination with operators:
+
+```bash
+$ um not authority=^bitbucket not part=^/$
+$ um bd=yesterday\;today and authority=^github not part=^/blog$
+$ um uuid=42720785481233211538 and bd=@1408102469 and ref=^2$
+$ um id=^1$ id=^2$-^4$
+$ um id=^1$ or id=^2$\-^4$ not id=^2$\;^3$
+```
+
+
 #### Editing
 #### Modifying
 #### Deleting
@@ -350,7 +410,7 @@ Along with this programme comes an exemplary [configuration file](../master/doc/
 
 #### Hooks
 
-A hook is a set of connected subscripts of an associative array called `hook`; a valid hook needs to have a name (string without space character) and a description. Hooks come into play, when there is no regular subcommand on command line. If a hook has no specified filter, the filter on the command line will be used (`um [<FILTER>] <HOOK>`; `<FILTER>`: `-0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-O,-P,-S,-U,-Y`). Hooks will be called in the function `__um_query_post()`:
+A hook is a set of connected subscripts of an associative array called `hook`; a valid hook needs to have a name (string without space character) and a description. Hooks come into play, when there is no regular subcommand on command line. If a hook has no specified filter, the filter on the command line will be used (`um [<FILTER>] <HOOK>`; `<FILTER>`: `-0,-1,-2,-3,-4,-7,-A,-D,-H,-N,-!,-O,-P,-S,-U,-Y`). Hooks will be called in the function `__um_query_post()`:
 
 ```bash
 [[ ${hook[${hook_chosen} header]} ]] && eval "${hook[${hook_chosen} header]}"
