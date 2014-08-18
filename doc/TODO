@@ -1,1 +1,6 @@
-TODO
+* Manpage
+* correct english spelling
+* try to store all records only in csv
+* give much more comments in the script
+* more allowed schemes
+* better examples in README.md

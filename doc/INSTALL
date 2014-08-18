@@ -1,1 +1,7 @@
-Make file "um" executable and cp it into <PATH>.
+### Install
+
+Explicitly required: `comm`, `cp`, `cut`, `date`, `diff`, `GNU bash >= 4.0`, `GNU find`, `GNU sed`, `GNU xargs`, `grep`, `head`, `md5sum`, `mkdir`, `od`, `rm`, `sort`, `stat`, `tail`, `tr`, `uniq`.
+
+* Get `urimark`(1) with `$ git clone https://github.com/D630/urimark.git` or
+  download it on https://github.com/D630/urimark/releases
+* Copy the script `um` elsewhere into `<PATH>` and make it executable.

@@ -1,12 +1,12 @@
 ## urimark v0.3.0.0 [GNU GPLv3]
 
 `urimark`(1) is a stupid shell script, that acts like a simple bookmark manager on the command line,
-* using `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`
-* working with 12 data fields
-* storing them in comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in the file system
-* providing subcommands to add, edit, modify, delete and rebuild records
-* to query and filter them with regexes (type: posix-egrep) and minimal search operators
-* and to postprocess and report query outputs with freely configurable hooks
+* using `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`,
+* working with 12 data fields,
+* storing them in comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in the file system,
+* providing subcommands to add, edit, modify, delete and rebuild records,
+* to query and filter them with regexes (type: posix-egrep) and minimal search operators and
+* to postprocess and report query outputs with freely configurable hooks.
 
 The main goal is to store records in plain text files and to manipulate them with standard Unix utilities, as fast as [possible](#todo).
 
@@ -14,7 +14,8 @@ The main goal is to store records in plain text files and to manipulate them wit
 
 1. [Install](#install)
 2. [Usage](#usage)
-3. [Examples](#examples)
+3. [Storage](#storage)
+4. [Examples](#examples)
   * [Syntax](#syntax)
   * [Adding](#adding)
   * [Filtering](#filtering)
@@ -22,7 +23,6 @@ The main goal is to store records in plain text files and to manipulate them wit
   * [Modifying](#modifying)
   * [Deleting](#deleting)
   * [Rebuilding](#rebuilding)
-4. [Storage](#storage)
 5. [Enviroment](#enviroment)
 6. [Configurations](#configurations)
   * [Hooks](#hooks)
@@ -110,6 +110,106 @@ ARGUMENTS
     <UUID>*                     'uuid'
 
     *regextype: posix-egrep (not used with -a or options after -M)
+```
+
+### Storage
+
+Currently, `urimark`(1) can handle URLs with these protocols: `http`, `https`, `ftp`, `ftps`, `dav`, `davs`, `gopher`, `webdav`, `webdavs`. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
+
+```
+# $ um info
+
+UUID       42712582202233536417
+ID         1
+BD         1408100780 # build date
+MD         1408282460 # last modification date
+SCHEME     https
+AUTHORITY  bitbucket.org
+PART       /
+NAME       Plant your code in the cloud. Watch it grow.
+DESC       web-based hosting service for projects that use either the Mercurial or Git revision control systems.
+HIER       /software/internet/web/crc
+TAGS       hg;mercurial;git;web;code;collaboration;vcs;atlassian
+REF        2
+
+UUID       42720785481233211538
+ID         2
+BD         1408102469
+MD         1408102469
+SCHEME     https
+AUTHORITY  github.com
+PART       /
+NAME       GitHub. Build software better, together.
+DESC       Git repository web-based hosting service which offers revision control and source code management functionality of Git.
+HIER       /software/internet/web/crc
+TAGS       git;web;code;collaboration;vcs
+REF        3;1
+
+UUID       42720785481233211538
+ID         3
+BD         1408102469
+MD         1408102469
+SCHEME     https
+AUTHORITY  github.com
+PART       /blog
+NAME       The GitHub Blog
+DESC       Tech and Info blog
+HIER       /media/blogs/computer
+TAGS       github;git;blog
+REF        2
+```
+
+The storage backend is a combination of comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in our file system:
+
+```
+# $ tree -a -P "*" -n --noreport -L 20 --charset=ascii "$PWD"
+
+${URIMARK_DATA_DIR}
+|-- 42712582202233536417
+|   |-- 1
+|   `-- _index
+|-- 42720785481233211538
+|   |-- 2
+|   |-- 3
+|   `-- _index
+`-- _index
+```
+
+```bash
+# $ cat "${URIMARK_DATA_DIR}/42720785481233211538/2"
+
+uuid=42720785481233211538
+date_build=1408102469
+date_modification=1408102469
+uri_authority="github.com"
+uri_scheme="https"
+uri_scheme_specific_part="/"
+uri_scheme_specific_part_description="Git repository web-based hosting service which offers revision control and source code management functionality of Git."
+uri_scheme_specific_part_hierarchy="/software/internet/web/crc"
+uri_scheme_specific_part_name="GitHub. Build software better, together."
+uri_scheme_specific_part_id=2
+uri_scheme_specific_part_reference[0]=3
+uri_scheme_specific_part_reference[1]=1
+uri_scheme_specific_part_tag[0]="git"
+uri_scheme_specific_part_tag[1]="web"
+uri_scheme_specific_part_tag[2]="code"
+uri_scheme_specific_part_tag[3]="collaboration"
+uri_scheme_specific_part_tag[4]="vcs"
+```
+
+```
+# $ cat "${URIMARK_DATA_DIR}/42720785481233211538/_index"
+
+"42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
+"42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
+```
+
+```
+# $ cat "${URIMARK_DATA_DIR}/_index"
+
+"42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
+"42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
+"42712582202233536417"|"1"|"1408100780"|"1408282460"|"https"|"bitbucket.org"|"/"|"Plant your code in the cloud. Watch it grow."|"web-based hosting service for projects that use either the Mercurial or Git revision control systems."|"/software/internet/web/crc"|"hg;mercurial;git;web;code;collaboration;vcs;atlassian"|"2"
 ```
 
 ### Examples
@@ -393,106 +493,6 @@ If we are sure of corruption in `<${URIMARK_DATA_DIR}/_index>`, we need to take 
 ```bash
 $ um rebuild -n index uuid=42720785481233211538
 $ um rebuild -n uuid=42720785481233211538
-```
-
-### Storage
-
-Currently, `urimark`(1) can handle URLs with these protocols: `http`, `https`, `ftp`, `ftps`, `dav`, `davs`, `gopher`, `webdav`, `webdavs`. To store a record, an URL will be split up into the three separate fields `scheme`, `authority` and `part`. All records with the same `authority` share the same `uuid`; but every URL has its own line counted `id`. A complete record is constructed like in this example database with three data sets:
-
-```
-# $ um info
-
-UUID       42712582202233536417
-ID         1
-BD         1408100780 # build date
-MD         1408282460 # last modification date
-SCHEME     https
-AUTHORITY  bitbucket.org
-PART       /
-NAME       Plant your code in the cloud. Watch it grow.
-DESC       web-based hosting service for projects that use either the Mercurial or Git revision control systems.
-HIER       /software/internet/web/crc
-TAGS       hg;mercurial;git;web;code;collaboration;vcs;atlassian
-REF        2
-
-UUID       42720785481233211538
-ID         2
-BD         1408102469
-MD         1408102469
-SCHEME     https
-AUTHORITY  github.com
-PART       /
-NAME       GitHub. Build software better, together.
-DESC       Git repository web-based hosting service which offers revision control and source code management functionality of Git.
-HIER       /software/internet/web/crc
-TAGS       git;web;code;collaboration;vcs
-REF        3;1
-
-UUID       42720785481233211538
-ID         3
-BD         1408102469
-MD         1408102469
-SCHEME     https
-AUTHORITY  github.com
-PART       /blog
-NAME       The GitHub Blog
-DESC       Tech and Info blog
-HIER       /media/blogs/computer
-TAGS       github;git;blog
-REF        2
-```
-
-The storage backend is a combination of comma-separated values (`CSV`) and `bash` parameters, hierarchically arranged in our file system:
-
-```
-# $ tree -a -P "*" -n --noreport -L 20 --charset=ascii "$PWD"
-
-${URIMARK_DATA_DIR}
-|-- 42712582202233536417
-|   |-- 1
-|   `-- _index
-|-- 42720785481233211538
-|   |-- 2
-|   |-- 3
-|   `-- _index
-`-- _index
-```
-
-```bash
-# $ cat "${URIMARK_DATA_DIR}/42720785481233211538/2"
-
-uuid=42720785481233211538
-date_build=1408102469
-date_modification=1408102469
-uri_authority="github.com"
-uri_scheme="https"
-uri_scheme_specific_part="/"
-uri_scheme_specific_part_description="Git repository web-based hosting service which offers revision control and source code management functionality of Git."
-uri_scheme_specific_part_hierarchy="/software/internet/web/crc"
-uri_scheme_specific_part_name="GitHub. Build software better, together."
-uri_scheme_specific_part_id=2
-uri_scheme_specific_part_reference[0]=3
-uri_scheme_specific_part_reference[1]=1
-uri_scheme_specific_part_tag[0]="git"
-uri_scheme_specific_part_tag[1]="web"
-uri_scheme_specific_part_tag[2]="code"
-uri_scheme_specific_part_tag[3]="collaboration"
-uri_scheme_specific_part_tag[4]="vcs"
-```
-
-```
-# $ cat "${URIMARK_DATA_DIR}/42720785481233211538/_index"
-
-"42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
-"42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
-```
-
-```
-# $ cat "${URIMARK_DATA_DIR}/_index"
-
-"42720785481233211538"|"2"|"1408102469"|"1408102469"|"https"|"github.com"|"/"|"GitHub. Build software better, together."|"Git repository web-based hosting service which offers revision control and source code management functionality of Git."|"/software/internet/web/crc"|"git;web;code;collaboration;vcs"|"3;1"
-"42720785481233211538"|"3"|"1408102469"|"1408102469"|"https"|"github.com"|"/blog"|"The GitHub Blog"|"Tech and Info blog"|"/media/blogs/computer"|"github;git;blog"|"2"
-"42712582202233536417"|"1"|"1408100780"|"1408282460"|"https"|"bitbucket.org"|"/"|"Plant your code in the cloud. Watch it grow."|"web-based hosting service for projects that use either the Mercurial or Git revision control systems."|"/software/internet/web/crc"|"hg;mercurial;git;web;code;collaboration;vcs;atlassian"|"2"
 ```
 
 ### Enviroment
