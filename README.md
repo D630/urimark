@@ -7,13 +7,19 @@ TODO
 1. [Install](#install)
 2. [Usage](#usage)
 3. [Examples](#examples)
+  * [Syntax](#syntax)
+  * [Adding](#adding)
+  * [Filtering](#filtering)
+  * [Editing](#editing)
+  * [Modifying](#modifying)
+  * [Deleting](#deleting)
+  * [Rebuilding](#rebuilding)
 4. [Storage](#storage)
 5. [Enviroment](#enviroment)
 6. [Configurations](#configurations)
   * [Hooks](#hooks)
-7. [Notes](#notes)
-8. [TODO](#todo)
-9. [Bugs & Requests](#bugs--requests)
+7. [TODO](#todo)
+8. [Bugs & Requests](#bugs--requests)
 
 ### Install
 
