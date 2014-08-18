@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.13" ; }
+__um_version() { echo "0.2.9.14" ; }
 
 __um_usage()
 {
@@ -109,7 +109,7 @@ ARGUMENTS
     <URI>                       'string'
     <UUID>*                     'uuid'
 
-    *regextype: posix-egrep (not used with -a)
+    *regextype: posix-egrep (not used with -a or options after -M)
 "
 }
 
@@ -196,13 +196,15 @@ __um_query()
                                     find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
                                             ! -name _index -regextype posix-egrep \
                                             ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
-                                            -printf '%P\n' \
+                                            -printf '%P\n' |
+                                        tr '/' ' ' \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                                 else
                                     find -H "$URIMARK_DATA_DIR" -mindepth 1 -maxdepth 1 -type d \
                                             -regextype posix-egrep \
                                             ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}$" \
-                                            -printf '%P\n' \
+                                            -printf '%P\n' |
+                                        tr '/' ' ' \
                                         >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                                 fi
                             else
@@ -1003,7 +1005,7 @@ __um_rebuild()
                     *)      continue                    ;;
                 esac
             fi
-        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d '/' -f 1 | sort | uniq)
+        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d ' ' -f 1 | sort | uniq)
         if ((${#DIRSTACK[@]} > 1 ))
         then
             dir_stack=($(dirs -l -p))
@@ -1474,6 +1476,7 @@ case $action in
             }
             ;;
     rebuild)
+
             __um_rebuild "${patterns[@]}" &&
             {
                 if [[ $rebuild_index == rebuild_index ]]

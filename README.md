@@ -274,11 +274,112 @@ $ um id=^1$ id=^2$-^4$
 $ um id=^1$ or id=^2$\-^4$ not id=^2$\;^3$
 ```
 
-
 #### Editing
+
+The subommand `edit` is the way to filter some records and edit them with our favourite editor. Therefore, `urimarks`(1) copies the specified id files into `<URIMARK_TMP_DIR>`; after editing, the modified file will be rewritten, the `md` field updated and all indexes rebuild.
+
+```bash
+$ um edit uuid=42720785481233211538
+Data set with id 2 has not been modified.
+Data set with id 3 has been modified.
+Index is beeing rebuild...
+Done.
+```
+
 #### Modifying
+
+The subommand `modify` is our method to edit and update records without using an editor. `urimark`(1) directly modifies id files without copying them to `<URIMARK_TMP_DIR>`. After modifying, not the hole modified file will be rewritten (only the specified lines). With `modify` the filters `-5,-6,-8,-9` and the operator `mod` are available.
+
+For example, to remove all tags with the value `code`, we could use:
+
+```bash
+$ um modify uuid=. mod tag-=code
+UUID: 9535008412671455610
+ID:   1
+Do you really wanne modify this record? (y/n/all/quit) y
+UUID: 42720785481233211538
+ID:   2
+Do you really wanne modify this record? (y/n/all/quit) y
+UUID: 42720785481233211538
+ID:   3
+Do you really wanne modify this record? (y/n/all/quit) y
+UUID: 9535008412671455610
+ID:   4
+Do you really wanne modify this record? (y/n/all/quit) y
+Records have been modified.
+Index is beeing rebuild...
+Done.
+```
+
+We can add tags without prompting like this:
+
+```bash
+$ um modi -n id=^1$\;^2$ mod tag+=code
+Records have been modified.
+Index is beeing rebuild...
+Done.
+```
+
+If we specify `tag` or `reference` as filter, we can change a hole value instead removing/adding:
+
+```bash
+$ um modi -n ref=^null$ mod ref=1
+Records have been modified.
+Index is beeing rebuild...
+Done.
+$ um id=4 _meta
+4  null  null  null  null  1
+$ um modi -n name=null and desc=null and hier=null and tag=null \
+    mod tag=code name=bitbucket desc=empty hier=/software/internet/web/crc
+Records have been modified.
+Index is beeing rebuild...
+Done.
+$ um id=4 _meta
+4  bitbucket  empty  /software/internet/web/crc  code  1
+```
+
 #### Deleting
+
+```bash
+$ um del id=4
+UUID: 9535008412671455610
+ID:   4
+Do you really wanne delete this record? (y/n/all/quit) all
+Records have been deleted.
+Index is beeing rebuild...
+Done.
+```
+
 #### Rebuilding
+
+As we have seen, the indexes of our databases will be rebuild automatically. The subcommand `rebuild` should only be used, if we need to fix some self-inflicted failures. For examples:
+
+To rebuild all id files of filterd `uuids`:
+
+```bash
+$ um rebuild auth=github.com # index => id files
+UUID: 42720785481233211538
+Do you really wanne rebuild all records with this uuid? (y/n/all/quit) all
+IDs are beeing rebuild...
+Done.
+```
+
+To rebuild the index files of filterd `uuids`:
+
+```bash
+$ um rebuild index auth=github.com # id files => index
+UUID: 42720785481233211538
+Do you really wanne rebuild all records with this uuid? (y/n/all/quit) y
+Index is beeing rebuild...
+Done.
+```
+
+If we are sure of corruption in `<${URIMARK_DATA_DIR}/_index>`, we need to take a filter with an `uuid` field. In conjunction with `rebuild` `urimark`(1) will use `find` instead `grep` to query our records:
+
+```bash
+$ um rebuild -n index uuid=42720785481233211538
+$ um rebuild -n uuid=42720785481233211538
+```
 
 ### Storage
 
@@ -456,10 +557,6 @@ The exemplary [configuration file](../master/doc/examples/urimark.conf) declares
 | `tcloud` | `Report: Cloud of tags` |
 | `_tlist` | `Report: ID, MD, BD and formatted with column` |
 | `uri` | `Report: URI` |
-
-### Notes
-
-TODO
 
 ### TODO
 
