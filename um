@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.2.9.14" ; }
+__um_version() { echo "0.3.0.1" ; }
 
 __um_usage()
 {
@@ -537,14 +537,15 @@ __um_query_post()
 {
     if [[ ${operators[and]} -eq 1 ]]
     then
-        __um_query_post_and() { sort "${URIMARK_TMP_DIR}/and1" ; }
+        __um_query_post_and() { sort -u "${URIMARK_TMP_DIR}/and1" ; }
     elif [[ ${operators[and]} -gt 1 ]]
     then
         __um_query_post_and()
         {
             diff --unchanged-group-format='%=' \
                     --old-group-format='' --new-group-format='' \
-                    --changed-group-format='' --from-file ${URIMARK_TMP_DIR}/and*
+                    --changed-group-format='' --from-file ${URIMARK_TMP_DIR}/and* | \
+                sort -u
         }
     fi
 
@@ -552,17 +553,20 @@ __um_query_post()
     then
         __um_query_post_or()
         {
-            comm -12 <(sort "${URIMARK_TMP_DIR}/or1" | uniq) <(__um_query_post_and | uniq)
+            comm -12 <(sort -u ${URIMARK_TMP_DIR}/or*) <(__um_query_post_and)
         }
     elif ((${operators[or]}))
     then
-        __um_query_post_or() { sort "${URIMARK_TMP_DIR}/or1" | uniq ; }
+        __um_query_post_or() { sort -u ${URIMARK_TMP_DIR}/or* ; }
+    elif ((${operators[and]}))
+    then
+        __um_query_post_or() { __um_query_post_and ; }
     fi
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
         __um_query_post_result() { comm -23 <(__um_query_post_or) \
-            <(sort "${URIMARK_TMP_DIR}/not1" | uniq) | sort -t '|' -k 2.2n ; }
+            <(sort -u "${URIMARK_TMP_DIR}/not1") | sort -t '|' -k 2.2n ; }
     else
         __um_query_post_result() { __um_query_post_or | sort -t '|' -k 2.2n ; }
     fi
@@ -1005,7 +1009,7 @@ __um_rebuild()
                     *)      continue                    ;;
                 esac
             fi
-        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d ' ' -f 1 | sort | uniq)
+        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d ' ' -f 1 | sort -u)
         if ((${#DIRSTACK[@]} > 1 ))
         then
             dir_stack=($(dirs -l -p))
@@ -1087,7 +1091,7 @@ __um_rebuild_index()
         else
             :
         fi
-    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort | uniq)
+    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort -u)
 }
 
 __um_rebuild_ids()
@@ -1152,7 +1156,7 @@ uri_scheme_specific_part_id=${id//\"/}"
             j=0
             l=0
         done < "${dir}/_index"
-    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort | uniq)
+    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort -u)
 }
 
 __um_cat_indexes() { find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f -name _index -print | \
