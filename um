@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.1" ; }
+__um_version() { echo "0.3.0.2" ; }
 
 __um_usage()
 {
@@ -608,7 +608,7 @@ __um_add()
         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
         then
             { echo "Wrong scheme." 1>&2 ; return 1 ; }
-        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri}" 2>/dev/null && \
+        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri%*/}" 2>/dev/null && \
                 __um_query_post 2>/dev/null) ]]
         then
             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
@@ -627,7 +627,7 @@ __um_add()
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." 1>&2 ; return 1 ; }
-                        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri}" 2>/dev/null && \
+                        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri%*/}" 2>/dev/null && \
                                 __um_query_post 2>/dev/null) ]]
                         then
                             { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
@@ -653,6 +653,8 @@ __um_add()
         [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
 
+    echo "$uri"
+    exit
     date=$(date --date=now +%s)
 
     ((${#tags[@]} == 0)) && tags[0]=$tag_default
