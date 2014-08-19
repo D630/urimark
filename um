@@ -653,8 +653,6 @@ __um_add()
         [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
 
-    echo "$uri"
-    exit
     date=$(date --date=now +%s)
 
     ((${#tags[@]} == 0)) && tags[0]=$tag_default
