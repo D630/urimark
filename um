@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.2" ; }
+__um_version() { echo "0.3.0.3" ; }
 
 __um_usage()
 {
@@ -538,14 +538,27 @@ __um_query_post()
     if [[ ${operators[and]} -eq 1 ]]
     then
         __um_query_post_and() { sort -u "${URIMARK_TMP_DIR}/and1" ; }
-    elif [[ ${operators[and]} -gt 1 ]]
+    elif [[ ${operators[and]} -eq 2 ]]
     then
         __um_query_post_and()
         {
-            diff --unchanged-group-format='%=' \
-                    --old-group-format='' --new-group-format='' \
-                    --changed-group-format='' --from-file ${URIMARK_TMP_DIR}/and* | \
-                sort -u
+            comm -12 <(sort -u "${URIMARK_TMP_DIR}/and1") <(sort -u "${URIMARK_TMP_DIR}/and2")
+        }
+    elif [[ ${operators[and]} -gt 2 ]]
+    then
+        __um_query_post_and()
+        {
+            declare i=
+            for i in $(eval "printf '%s\n' "${URIMARK_TMP_DIR}"/and{2..${operators[and]}}")
+            do
+                if ((${i:${#a}-1} == ${operators[and]}))
+                then
+                    comm -12 <(sort -u "${URIMARK_TMP_DIR}/and1") <(sort -u "$i")
+                else
+                    comm -12 <(sort -u "${URIMARK_TMP_DIR}/and1") <(sort -u "$i") > "${URIMARK_TMP_DIR}/and1$$"
+                    cp -- "${URIMARK_TMP_DIR}/and1$$" "${URIMARK_TMP_DIR}/and1"
+                fi
+            done
         }
     fi
 
@@ -553,11 +566,11 @@ __um_query_post()
     then
         __um_query_post_or()
         {
-            comm -12 <(sort -u ${URIMARK_TMP_DIR}/or*) <(__um_query_post_and)
+            comm -12 <(sort -u "${URIMARK_TMP_DIR}/or1") <(__um_query_post_and)
         }
     elif ((${operators[or]}))
     then
-        __um_query_post_or() { sort -u ${URIMARK_TMP_DIR}/or* ; }
+        __um_query_post_or() { sort -u "${URIMARK_TMP_DIR}/or1" ; }
     elif ((${operators[and]}))
     then
         __um_query_post_or() { __um_query_post_and ; }
@@ -565,8 +578,7 @@ __um_query_post()
 
     if [[ ${operators[or]} && ${operators[not]} ]]
     then
-        __um_query_post_result() { comm -23 <(__um_query_post_or) \
-            <(sort -u "${URIMARK_TMP_DIR}/not1") | sort -t '|' -k 2.2n ; }
+        __um_query_post_result() { comm -23 <(__um_query_post_or) <(sort -u "${URIMARK_TMP_DIR}/not1") | sort -t '|' -k 2.2n ; }
     else
         __um_query_post_result() { __um_query_post_or | sort -t '|' -k 2.2n ; }
     fi
