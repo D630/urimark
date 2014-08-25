@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.3" ; }
+__um_version() { echo "0.3.0.4" ; }
 
 __um_usage()
 {
@@ -635,7 +635,11 @@ __um_add()
         do
             case $i in
                 uri=?*)
-                        uri=${i#*=}
+                        uri=${i/uri=/}
+
+                        URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ;
+                        __um_query uri="${uri%*/}"
+                        exit
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." 1>&2 ; return 1 ; }
@@ -646,24 +650,27 @@ __um_add()
                         fi
                         ;;
                 name=?*)
-                        name=${i#*=}
+                        name=${i/name=/}
                         ;;
                 description=?*)
-                        description=${i#*=}
+                        description=${i/description=/}
                         ;;
                 hierarchy=?*)
-                        hierarchy=${i#*=}
+                        hierarchy=${i/hierarchy=/}
                         ;;
                 tag=?*)
-                        IFS=';' read -r -a tags <<< "${i#*=}"
+                        IFS=';' read -r -a tags <<< "${i/tag=/}"
                         ;;
                 reference=?*)
-                        IFS=';' read -r -a references <<< "${i#*=}"
+                        IFS=';' read -r -a references <<< "${i/reference=/}"
                         ;;
             esac
         done
         [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
+
+    echo "$uri"
+    exit
 
     date=$(date --date=now +%s)
 
