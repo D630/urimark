@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.4" ; }
+__um_version() { echo "0.3.0.5" ; }
 
 __um_usage()
 {
@@ -466,8 +466,8 @@ __um_query()
                                     query_uri_schemes_specific_parts \
                                 <<< "${val##*://}"
                             query_uri_schemes_specific_parts=/${query_uri_schemes_specific_parts}
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){4}\"${query_uri_schemes}\"\|\"${query_uri_authority}\"\|\"${query_uri_schemes_specific_parts}\"\|(\"[^\"\|]*\"\|){4}(\"[^\"\|]*\"){1}$" \
+                            fgrep ${not:+-v} \
+                                    "|\"${query_uri_schemes}\"|\"${query_uri_authority}\"|\"${query_uri_schemes_specific_parts}\"|" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
