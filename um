@@ -636,10 +636,6 @@ __um_add()
             case $i in
                 uri=?*)
                         uri=${i/uri=/}
-
-                        URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ;
-                        __um_query uri="${uri%*/}"
-                        exit
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." 1>&2 ; return 1 ; }
@@ -668,9 +664,6 @@ __um_add()
         done
         [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
-
-    echo "$uri"
-    exit
 
     date=$(date --date=now +%s)
 
