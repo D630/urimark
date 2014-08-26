@@ -549,6 +549,7 @@ The exemplary [configuration file](../master/doc/examples/urimark.conf) declares
 | `abso` | `Report: Absolute Path` |
 | `acloud` | `Report: Cloud of authorities` |
 | `browse` | `Interaction: Browse URI with urlview` |
+| `doubles` | `Report: Double records` |
 | `fmod` | `Report: First 10 modified records with ID,MD,URI` |
 | `hcloud` | `Report: Cloud of hierarchies` |
 | `ids` | `Report: Show first and last id` |
