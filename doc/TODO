@@ -5,3 +5,4 @@
 * more allowed schemes
 * better examples in README.md
 * __um_query_post needs to be revised
+* better error handling
