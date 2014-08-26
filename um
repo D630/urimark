@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.3" ; }
+__um_version() { echo "0.3.0.6" ; }
 
 __um_usage()
 {
@@ -466,8 +466,8 @@ __um_query()
                                     query_uri_schemes_specific_parts \
                                 <<< "${val##*://}"
                             query_uri_schemes_specific_parts=/${query_uri_schemes_specific_parts}
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){4}\"${query_uri_schemes}\"\|\"${query_uri_authority}\"\|\"${query_uri_schemes_specific_parts}\"\|(\"[^\"\|]*\"\|){4}(\"[^\"\|]*\"){1}$" \
+                            fgrep ${not:+-v} \
+                                    "|\"${query_uri_schemes}\"|\"${query_uri_authority}\"|\"${query_uri_schemes_specific_parts}\"|" \
                                     "${URIMARK_DATA_DIR}/_index" \
                                 >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
                             ;;
@@ -635,7 +635,7 @@ __um_add()
         do
             case $i in
                 uri=?*)
-                        uri=${i#*=}
+                        uri=${i/uri=/}
                         if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
                         then
                             { echo "Wrong scheme." 1>&2 ; return 1 ; }
@@ -646,19 +646,19 @@ __um_add()
                         fi
                         ;;
                 name=?*)
-                        name=${i#*=}
+                        name=${i/name=/}
                         ;;
                 description=?*)
-                        description=${i#*=}
+                        description=${i/description=/}
                         ;;
                 hierarchy=?*)
-                        hierarchy=${i#*=}
+                        hierarchy=${i/hierarchy=/}
                         ;;
                 tag=?*)
-                        IFS=';' read -r -a tags <<< "${i#*=}"
+                        IFS=';' read -r -a tags <<< "${i/tag=/}"
                         ;;
                 reference=?*)
-                        IFS=';' read -r -a references <<< "${i#*=}"
+                        IFS=';' read -r -a references <<< "${i/reference=/}"
                         ;;
             esac
         done
@@ -695,10 +695,10 @@ __um_add()
 
     if [[ $succeeded ]]
     then
-        printf '%s\n' "New URI with id ${id} has been recorded." 1>&2
         dir_stack=($(dirs -l -p))
+        { printf '%s\n' "New URI with id ${id} has been recorded." 1>&2 ; return 0 ; }
     else
-         { printf '%s\n' "URI has not been recorded." 1>&2 ; return 1 ; }
+         { echo "URI has not been recorded." 1>&2 ; return 1 ; }
     fi
 }
 

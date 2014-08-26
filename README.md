@@ -1,4 +1,5 @@
-## urimark v0.3.0.3 [GNU GPLv3]
+## urimark v0.3.0.6 [GNU GPLv3]
+=======
 
 `urimark`(1) is a stupid shell script, that acts like a simple bookmark manager on the command line,
 * using `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`,
@@ -549,6 +550,7 @@ The exemplary [configuration file](../master/doc/examples/urimark.conf) declares
 | `abso` | `Report: Absolute Path` |
 | `acloud` | `Report: Cloud of authorities` |
 | `browse` | `Interaction: Browse URI with urlview` |
+| `doubles` | `Report: Double records` |
 | `fmod` | `Report: First 10 modified records with ID,MD,URI` |
 | `hcloud` | `Report: Cloud of hierarchies` |
 | `ids` | `Report: Show first and last id` |
