@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.5" ; }
+__um_version() { echo "0.3.0.6" ; }
 
 __um_usage()
 {
@@ -695,10 +695,10 @@ __um_add()
 
     if [[ $succeeded ]]
     then
-        printf '%s\n' "New URI with id ${id} has been recorded." 1>&2
         dir_stack=($(dirs -l -p))
+        { printf '%s\n' "New URI with id ${id} has been recorded." 1>&2 ; return 0 ; }
     else
-         { printf '%s\n' "URI has not been recorded." 1>&2 ; return 1 ; }
+         { echo "URI has not been recorded." 1>&2 ; return 1 ; }
     fi
 }
 
