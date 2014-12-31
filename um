@@ -33,7 +33,7 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.6" ; }
+__um_version() { echo "0.3.0.7" ; }
 
 __um_usage()
 {
@@ -683,12 +683,13 @@ __um_add()
     then
         uuid=$auuid
         pushd "$uuid" 1>/dev/null
-        printf '%s\n' "Authority has already been recorded at file://${URIMARK_DATA_DIR}/${auuid} ." 1>&2
+        printf '%s\n' "Authority has already been recorded at file://${URIMARK_DATA_DIR}/${auuid}" 1>&2
         __um_add_print && succeeded=succeeded
     else
         uuid=$(__um_random 8)
         mkdir -p "${URIMARK_DATA_DIR}/${uuid}" && \
-            printf '%s\n' "New authority has been recorded at file://${URIMARK_DATA_DIR}/${uuid} ." 1>&2
+            printf '%s\n' "New authority has been recorded at file://${URIMARK_DATA_DIR}/${uuid}" 1>&2 && \
+            printf '%s\n' "${URIMARK_DATA_DIR}/${uuid}" >> "${URIMARK_DATA_DIR}/_uuids"
         pushd "$uuid" 1>/dev/null
         __um_add_print && succeeded=succeeded
     fi
@@ -854,10 +855,11 @@ __um_delete()
             for d in "${deletion[@]}"
             do
                 pushd "${d% *}" >/dev/null
+                echo "Deleting ${URIMARK_DATA_DIR}/${d% *}/${d#* }" 1>&2
                 rm -- "${URIMARK_DATA_DIR}/${d% *}/${d#* }"
             done
             dir_stack=($(dirs -l -p))
-            { echo "Records have been deleted." 1>&2 ; return 0 ; }
+            { echo "Done." 1>&2 ; return 0 ; }
         else
             { echo "No Record has been deleted." 1>&2 ; return 1 ; }
         fi
@@ -1044,6 +1046,7 @@ __um_rebuild_index()
 
     while read -r dir
     do
+        (
         declare -a \
            r_au=() \
            r_db=() \
@@ -1090,20 +1093,20 @@ __um_rebuild_index()
             }
             uri_scheme_specific_part_reference=()
             uri_scheme_specific_part_tag=()
-        done < <(find -H "$dir" -mindepth 1 -maxdepth 1 -type f ! -name _index -print)
-        exec 3>"${dir}/_index"
-        for i in "${!r_uuid[@]}"
-        do
-            printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" >&3
-        done
-        exec 3<&-
-        if [[ $(stat -c %s "${dir}/_index" 2>/dev/null) -lt 2 ]]
+        done < <(GLOBIGNORE=${dir}/*[^0-9]* ; printf '%s\n' "${dir}"/*)
+        if [[ ${r_uuid[@]} ]]
         then
-            rm -- "${dir}/_index"
+            for i in "${!r_uuid[@]}"
+            do
+                printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" && echo "Rebuilding ${dir}/${r_id[i]}" 1>&2
+            done > "${dir}/_index"
         else
-            :
+            rm -r -- "$dir" && echo "Deleting ${dir}" 1>&2
+            sed -i "\#${dir}#d" "${URIMARK_DATA_DIR}/_uuids"
         fi
+        ) &
     done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort -u)
+    wait
 }
 
 __um_rebuild_ids()
@@ -1171,8 +1174,10 @@ uri_scheme_specific_part_id=${id//\"/}"
     done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort -u)
 }
 
-__um_cat_indexes() { find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f -name _index -print | \
-    xargs -r cat > "${URIMARK_DATA_DIR}/_index" ; }
+__um_cat_indexes()
+{
+    sed 's#$#/_index#' "${URIMARK_DATA_DIR}/_uuids" | xargs -r cat > "${URIMARK_DATA_DIR}/_index"
+}
 
 __um_random()
 {
@@ -1227,8 +1232,6 @@ __um_calculating_date()
         __um_calculating_date_print "$1" | tail -n1
     fi
 }
-
-__um_delete_empty_dirs() { find -H "$URIMARK_DATA_DIR" -maxdepth 1 -type d -empty -delete ; }
 
 __um_check_args()
 {
@@ -1463,7 +1466,6 @@ case $action in
                 __um_rebuild_index &&
                 __um_cat_indexes &&
                 echo "Done." 1>&2
-                __um_delete_empty_dirs
             }
             ;;
     edit)

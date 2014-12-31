@@ -1,4 +1,4 @@
-## urimark v0.3.0.6 [GNU GPLv3]
+## urimark v0.3.0.7 [GNU GPLv3]
 
 `urimark`(1) is a stupid shell script, that acts like a simple bookmark manager on the command line,
 * using `GNU bash`, `GNU grep`, `GNU sed`, `GNU coreutils`, `GNU diffutils` and `GNU findutils`,
