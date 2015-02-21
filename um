@@ -1,25 +1,13 @@
 #!/usr/bin/env bash
 
-# Copyright 2014 D630
+# Copyright 2014f. D630
 # https://github.com/D630/urimark
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # -- DEBUGGING.
 
 #printf '%s (%s)\n' "$BASH_VERSION" "${BASH_VERSINFO[5]}" && exit 0
-#set -o xtrace #; exec 2>> ~/um.log
+#set -o xtrace
+#exec 2>> ~/um.log
 #set -o verbose
 #set -o noexec
 #set -o errexit
@@ -33,1490 +21,1361 @@
 
 # -- FUNCTIONS.
 
-__um_version() { echo "0.3.0.7" ; }
+__um_version() { echo "v0.4.0.0" ; }
 
 __um_usage()
 {
-    printf 'um (-a|-d|-e|-h|-m|-r|-v) [<OPT>...]
+    printf 'um (-a|-c|-d|-e|-h|-i|-m|-v) [<OPT>...]
 um [<OPT>...] [<HOOK>]'
 }
 
 __um_help()
 {
-    printf "$(__um_usage)
+    printf "urimark $(__um_version)
 
-SUBCOMMANDS
------------
-    ACTION                      OPT
-    ------                      ---
-    -a, --add                   -4,-7,-D,-H,-N,-U
-    -d, --delete, --del         -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
-                                -P,-S,-U,-Y
-    -e, --edit                  -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-!,-0,-P,
-                                -S,-U,-Y
-    -h, --help
-    -m, --modify, --modi        -0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-A,-D,-H,
-                                -M,-N,-n,-!,-0,-P,-S,-U,-Y
-    -r, --rebuild, --reb        -0,-1,-2,-3,-7,-A,-D,-H,-M,-N,-n,-!,-0,
-                                -P,-S,-U,-x,-Y
-    -v, --version
+$(__um_usage)
 
-    OPT                         ARG
-    ---                         ---
-    -0, --uuid=                 <UUID>
-    -1, --id=                   <ID>
-    -2, --bd=                   <BD>
-    -3, --md=                   <MD>
-    -4, --tag=                  <TAG>
-    -5, --tag+=                 <TAG>
-    -6, --tag-=                 <TAG>
-    -7, --reference=, --ref=    <REF>
-    -8, --reference+=, --ref+=  <REF>
-    -9, --reference-=, --ref-=  <REF>
-    -A, --and
-    -D, --description=, --desc= <DESC>
-    -H, --hierarchy=, --hier=   <HIER>
-    -M, --mod
-    -N, --name=                 <NAME>
+Subcommands:
+  -a, --add                 Add a record
+  -c, --compact, --com      Compact database
+  -d, --delete, --del       Delete a record
+  -e, --edit                Edit manually one record with EDITOR
+  -h, --help                Show this instruction
+  -i, --initialize, --init  Initialize database
+  -m, --modify, --modi      Modify many records without EDITOR
+  -v, --version             Print version
+
+Options:
+  Miscellaneous:
     -n, --non-interactive, --nv
+
+  Operators:
     -!, --not
+    -A, --and
+    -M, --mod
     -O, --or
-    -P, --part=                 <PART>
-    -S, --scheme=               <SCHEME>
-    -U, --uri=                  <URI>
-    -x, --index
-    -Y, --authority=, --auth=   <AUTH>
 
-ARGUMENTS
----------
-    <AUTH>*                     'string'
-    <BD>                        'date'* or range 'date;date'. Two special
-                                values: 'first' and 'last'
-    <DESC>*                     'string'
-    <HIER>*                     '/foo/bar/n'
-    <HOOK>                      'string' without space character
-    <ID>*                       'int', 'int;int;n' or range 'int-int'
-                                (or combi). Two special values: 'first'
-                                and 'last'
-    <MD>                        'date'* or range 'date;date'. Two special
-                                values: 'first' and 'last'
-    <NAME>*                     'string'
-    <PART>*                     'string'
-    <REF>*                      'int' or 'int;int;n'
-    <SCHEME>*                   'http','https','ftp','ftps','dav','davs',
-                                'gopher','webdav','webdavs
-    <TAG>*                      'string' or 'string;string;n'
-    <URI>                       'string'
-    <UUID>*                     'uuid'
+  Filters:
+    -1, --id=ID
+    -2, --ctime=CT, --ct=CT
+    -3, --mtime=MT, --mt=MT
+    -4, --tag=TAG
+    -D, --description=DESC, --desc=DESC
+    -N, --name=NAME
+    -P, --part=PART
+    -S, --scheme=SCHEME
+    -U, --uri=URI
+    -Y, --authority=AUTH, --auth=AUTH
 
-    *regextype: posix-egrep (not used with -a or options after -M)
+  Special mod-Assignments:
+    -5, --tag+=TAG
+    -6, --tag-=TAG
+
+You may use all long subcommands and options without double hypen.
+
+Arguments:
+  AUTH*                     'string'
+  CT                        's' or range 's;s'. Two special
+                            values: 'first' and 'last'
+  DESC*                     'string'
+  HOOK                      'string' without space character
+  ID                        'int', 'int;int;n' or range 'int-int'
+                            (or combi). Two special values: 'first'
+                            and 'last'
+  MT                        's' or range 's;s'. Two special
+                            values: 'first' and 'last'
+  NAME*                     'string'
+  PART*                     'string'
+  SCHEME*                   'http','https','ftp','ftps','dav','davs',
+                            'gopher','webdav','webdavs'
+  TAG*                      'string' or 'string;string;n'
+  URI*                      'string'
+
+* You may prefix these arguments with 'g~', 'l~' or 'r~' to use the
+  core functions glob(), like() or regexp() (PCRE) of sqlite3.
 "
 }
 
-__um_query()
+__um_query ()
 {
     declare \
+        ct_single= \
         i= \
         id= \
-        not= \
+        id_create_tbl_tmp= \
+        id_operator= \
+        id_single= \
+        mt_single= \
         operator= \
         pattern= \
-        query_uri_authority= \
-        query_uri_schemes= \
-        query_uri_schemes_specific_parts= \
-        r= \
-        t= \
-        time= \
-        val= \
+        sql_select= \
         var=
 
     declare -a \
-        ids=() \
-        refs=() \
-        tags=() \
+        and=() \
+        ids_range=() \
+        ids_singles=() \
+        not=() \
+        or=() \
+        or_and=() \
+        query=() \
+        result=() \
         times=()
 
-    declare -gA operators
+    declare -A operators
 
-    __um_query_parse_val()
+    function __um_query_do
     {
-        if [[ $val =~ ^\^ ]]
+        sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<SQLITE
+.bail on
+.echo off
+.header off
+.separator \"|\"
+.mode list
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output "${URIMARK_DATA_DIR}/urimark.log"
+.load "${URIMARK_CONF_FILE%/*}/pcre.so"
+PRAGMA automatic_index = "1";
+PRAGMA checkpoint_fullfsync = "0";
+PRAGMA journal_mode = "MEMORY";
+PRAGMA journal_size_limit = "-1";
+PRAGMA synchronous = "0";
+PRAGMA foreign_keys = "1";
+PRAGMA locking_mode = "NORMAL";
+PRAGMA max_page_count = "1073741823";
+PRAGMA page_size = "32767";
+PRAGMA recursive_triggers = "0";
+PRAGMA secure_delete = "1";
+PRAGMA temp_store = "2";
+PRAGMA wal_autocheckpoint = "1000";
+PRAGMA user_version = "0";
+.output stdout
+BEGIN TRANSACTION;
+${query[*]}
+${or[*]}
+${and[*]}
+${or_and[*]}
+${not[*]}
+${result[*]}
+${sql_select}
+COMMIT;
+.quit
+SQLITE
+    }
+
+    function __um_query_check_fn
+    case $1 in
+        g~?*)
+            pattern="glob('${pattern#g~*}',${2})"
+            ;;
+        l~?*)
+            pattern="like('${pattern#l~*}',${2})"
+            ;;
+        r~?*)
+            pattern="regexp('${pattern#r~*}',${2})"
+            ;;
+        s~?*)
+            pattern="${pattern#s~*}'"
+            ;;
+        *)
+            pattern="${2} == '${pattern}'"
+    esac
+
+    if (($# == 0))
+    then
+        sql_select="SELECT * FROM view_csv_quoted;"
+    else
+        for i
+        do
+            read -r var pattern <<< "${i/=/ }"
+            case $var in
+                and)
+                    operator=and
+                    ;;
+                not)
+                    operator=not
+                    ;;
+                or)
+                    operator=or
+                    ;;
+                *)
+                    operator=${operator:-or}
+                    operators[$operator]=$((${operators[$operator]} + 1))
+                    case $var in
+                        id)
+                            id_operator=$operator
+                            id_create_tbl_tmp="CREATE TEMP TABLE [${id_operator}${operators[$operator]}] AS"
+                            for id in ${pattern//,/ }
+                            do
+                                if [[ $id =~ - ]]
+                                then
+                                    for id in ${id//-/ }
+                                    do
+                                        ids_range+=("$id")
+                                    done
+                                    if [[ $id_create_tbl_tmp ]]
+                                    then
+                                        query+=("${id_create_tbl_tmp}
+                                            SELECT VC.* FROM view_csv AS VC
+                                            INNER JOIN view_calc_id_first AS IF
+                                            INNER JOIN view_calc_id_last AS IL
+                                            ON
+                                                VC.id >= ${ids_range[0]//first/IF.id_first} AND
+                                                VC.id <= ${ids_range[1]//last/IL.id_last}
+                                            ORDER BY VC.id ASC;")
+                                        id_create_tbl_tmp=
+                                    else
+                                        query+=("INSERT INTO [${id_operator}${operators[$operator]}]
+                                            SELECT VC.* FROM view_csv AS VC
+                                            INNER JOIN view_calc_id_first AS IF
+                                            INNER JOIN view_calc_id_last AS IL
+                                            ON
+                                                VC.id >= ${ids_range[0]//first/IF.id_first} AND
+                                                VC.id <= ${ids_range[1]//last/IL.id_last}
+                                            ORDER BY VC.id ASC;")
+                                    fi
+                                    unset -v ids_range
+                                else
+                                    ids_singles+=("$id")
+                                fi
+                            done
+                            ((${#ids_singles[@]} != 0)) && {
+                                if [[ $id_create_tbl_tmp ]]
+                                then
+                                    query+=("$id_create_tbl_tmp")
+                                else
+                                    query+=("INSERT INTO [${id_operator}${operators[$operator]}]")
+                                fi
+                                printf -v pattern '%s,' "${ids_singles[@]}"
+                                if [[ $pattern =~ [^0-9,] ]]
+                                then
+                                    if [[ $pattern =~ first && $pattern =~ last ]]
+                                    then
+                                        pattern=${pattern//first/\'first\'}
+                                        pattern=${pattern//last/\'last\'}
+                                        id_single="VC.id IN (${pattern%,}) OR VC.id == F.id_first OR VC.id == L.id_last"
+                                    elif [[ $pattern =~ first ]]
+                                    then
+                                        pattern=${pattern//first/\'first\'}
+                                        id_single="VC.id IN (${pattern%,}) OR VC.id == F.id_first"
+                                    elif [[ $pattern =~ last ]]
+                                    then
+                                        pattern=${pattern//last/\'last\'}
+                                        id_single="VC.id IN (${pattern%,}) OR VC.id == L.id_last"
+                                    fi
+                                    query+=("SELECT VC.* FROM view_csv AS VC
+                                        INNER JOIN view_calc_id_first AS F
+                                        INNER JOIN view_calc_id_last AS L
+                                        ON
+                                            ${id_single}
+                                        ORDER BY VC.id ASC;")
+                                else
+                                    query+=("SELECT * FROM view_csv WHERE id IN (${pattern%,}) ORDER BY id ASC;")
+                                fi
+                            }
+                            ;;
+                        ct)
+                            for pattern in ${pattern//,/ }
+                            do
+                                times+=("$pattern")
+                            done
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS")
+                            if ((${#times[@]} == 1))
+                            then
+                                if [[ ${times[0]} == first ]]
+                                then
+                                    ct_single="VC.ctime == A.ctime_asc"
+                                elif [[ ${times[0]} == last ]]
+                                then
+                                    ct_single="VC.ctime == D.ctime_desc"
+                                else
+                                    ct_single="VC.ctime == ${times[0]}"
+                                fi
+                                query+=("SELECT VC.* FROM view_csv AS VC
+                                    INNER JOIN view_calc_ctime_asc A
+                                    INNER JOIN view_calc_ctime_desc AS D
+                                    ON
+                                        ${ct_single}
+                                    ORDER BY VC.id ASC;")
+                            elif ((${#times[@]} == 2))
+                            then
+                                query+=("SELECT VC.* FROM view_csv AS VC
+                                    INNER JOIN view_calc_ctime_asc A
+                                    INNER JOIN view_calc_ctime_desc AS D
+                                    ON
+                                        VC.ctime >= ${times[0]//first/A.ctime_asc} AND
+                                        VC.ctime <= ${times[1]//last/D.ctime_desc}
+                                    ORDER BY VC.id ASC;")
+                            fi
+                            ;;
+                        mt)
+                            for pattern in ${pattern//,/ }
+                            do
+                                times+=("$pattern")
+                            done
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS")
+                            if ((${#times[@]} == 1))
+                            then
+                                if [[ ${times[0]} == first ]]
+                                then
+                                    mt_single="VC.mtime == A.mtime_asc"
+                                elif [[ ${times[0]} == last ]]
+                                then
+                                    mt_single="VC.mtime == D.mtime_desc"
+                                else
+                                    mt_single="VC.mtime == ${times[0]}"
+                                fi
+                                query+=("SELECT VC.* FROM view_csv AS VC
+                                    INNER JOIN view_calc_mtime_asc A
+                                    INNER JOIN view_calc_mtime_desc AS D
+                                    ON
+                                        ${mt_single}
+                                    ORDER BY VC.id ASC;")
+                            elif ((${#times[@]} == 2))
+                            then
+                                query+=("SELECT VC.* FROM view_csv AS VC
+                                    INNER JOIN view_calc_mtime_asc A
+                                    INNER JOIN view_calc_mtime_desc AS D
+                                    ON
+                                        VC.mtime >= ${times[0]//first/A.mtime_asc} AND
+                                        VC.mtime <= ${times[1]//last/D.mtime_desc}
+                                    ORDER BY VC.id ASC;")
+                            fi
+                            ;;
+                        scheme)
+                            __um_query_check_fn "$pattern" "scheme"
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS SELECT * FROM view_csv WHERE ${pattern} ORDER BY id;")
+                            ;;
+                        authority)
+                            __um_query_check_fn "$pattern" "auth"
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS SELECT * FROM view_csv WHERE ${pattern} ORDER BY id;")
+                            ;;
+                        part)
+                            __um_query_check_fn "$pattern" "part"
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS SELECT * FROM view_csv WHERE ${pattern} ORDER BY id;")
+                            ;;
+                        name)
+                            __um_query_check_fn "$pattern" "name"
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS SELECT * FROM view_csv WHERE ${pattern} ORDER BY id;")
+                            ;;
+                        description)
+                            __um_query_check_fn "$pattern" "desc"
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS SELECT * FROM view_csv WHERE ${pattern} ORDER BY id;")
+                            ;;
+                        tag)
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS")
+                            for pattern in ${pattern//,/ }
+                            do
+                                __um_query_check_fn "$pattern" "T.tag"
+                                query+=("SELECT CV.* FROM view_csv AS CV INNER JOIN tbl_tags AS T INNER JOIN tbl_tags_urimark AS U ON ${pattern} AND U.tbl_tags_key == T.key AND CV.id == U.tbl_urimark_id UNION")
+                            done
+                            query[-1]=${query[-1]/ UNION/;}
+                            ;;
+                        reference)
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS")
+                            for pattern in ${pattern//,/ }
+                            do
+                                __um_query_check_fn "$pattern" "R.ref"
+                                query+=("SELECT CV.* FROM view_csv AS CV INNER JOIN tbl_references AS R INNER JOIN tbl_references_urimark AS U ON ${pattern} AND U.tbl_references_key == R.key AND CV.id == U.tbl_urimark_id UNION")
+                            done
+                            query[-1]=${query[-1]/ UNION/;}
+                            ;;
+                        uri)
+                            __um_query_check_fn "$pattern" "U.uri"
+                            query+=("CREATE TEMP TABLE [${operator}${operators[$operator]}] AS
+                                    SELECT CV.*
+                                    FROM view_csv AS CV
+                                    INNER JOIN view_id_uri As U
+                                    ON
+                                        ${pattern} AND
+                                        U.id == CV.id
+                                    ORDER BY CV.id;")
+                    esac
+                        ids_singles=()
+                        times=()
+            esac
+        done
+
+        if [[ ${operators[or]} ]]
         then
-            pattern=${val#^}
+            or+=("CREATE TEMP TABLE [or0] AS")
+            for ((i=1 ; i <= ${operators[or]} ; ++i))
+            do
+                or+=("SELECT * FROM [or${i}] UNION")
+            done
+            or[-1]=${or[-1]/ UNION/ORDER BY id;}
         else
-            pattern=${val/#/.\*}
+            or+=("CREATE TEMP TABLE [or0] AS SELECT * FROM view_csv WHERE id == 0;")
         fi
 
-        if [[ $pattern =~ \$$ ]]
+        if [[ ${operators[and]} -gt 1 ]]
         then
-            pattern=${pattern/%$/}
+            and+=("CREATE TEMP TABLE [and0] AS SELECT * FROM (")
+            for ((i=1 ; i <= ${operators[and]}; ++i))
+            do
+                and+=("SELECT * FROM [and${i}] UNION ALL")
+            done
+            and[-1]=${and[-1]/ UNION ALL/) GROUP BY id HAVING (COUNT(id) > 1);}
+            or_and=("CREATE TEMP TABLE [or_and] AS SELECT * FROM (SELECT * FROM [or0] UNION ALL SELECT * FROM [and0]) GROUP BY id HAVING (COUNT(id) > 1);")
+        elif [[ ${operators[and]} -eq 1 ]]
+        then
+            or_and=("CREATE TEMP TABLE [or_and] AS SELECT * FROM (SELECT * FROM [or0] UNION ALL SELECT * FROM [and1]) GROUP BY id HAVING (COUNT(id) > 1);")
         else
-            pattern=${pattern/%/.\*}
+            or_and=("ALTER TABLE [or0] RENAME TO [or_and];")
         fi
+
+        if [[ ${operators[not]} ]]
+        then
+            not+=("CREATE TEMP TABLE [not0] AS")
+            for ((i=1 ; i <= ${operators[not]} ; ++i))
+            do
+                not+=("SELECT * FROM [not${i}] UNION")
+            done
+            not[-1]=${not[-1]/ UNION/ORDER BY id;}
+            result=("CREATE TEMP TABLE [result] AS SELECT * FROM [or_and] WHERE id NOT IN (SELECT id FROM [not0]);")
+        else
+            result=("ALTER TABLE [or_and] RENAME TO [result];")
+        fi
+
+        sql_select="SELECT '\"' || id, ctime, mtime, scheme, auth, part, name, desc, tags, refs || '\"' FROM [result];"
+    fi
+
+    [[ ${hook[${_um_options[hook_chosen]} header]} ]] && eval "${hook[${_um_options[hook_chosen]} header]}"
+    eval "${hook[${_um_options[hook_chosen]} preprocess]} __um_query_do ${hook[${_um_options[hook_chosen]} postprocess]}"
+    [[ ${hook[${_um_options[hook_chosen]} footer]} ]] && eval "${hook[${_um_options[hook_chosen]} footer]}" || :
+}
+
+__um_add ()
+{
+    declare \
+        authority= \
+        description= \
+        i= \
+        name= \
+        part= \
+        scheme= \
+        uri= \
+        id=
+
+    declare -a \
+        tags=() \
+        references=()
+
+    function __um_add_record
+    {
+        declare \
+            insert_tbl_tags= \
+            insert_tbl_references_urimark= \
+            insert_tbl_tags_urimark= \
+            insert_tbl_urimark_name= \
+            insert_tbl_urimark_description= \
+            insert_tbl_names= \
+            insert_tbl_descriptions= \
+            delete_tbl_urimark=
+
+        if [[ -z $id || $id =~ [^0-9] ]]
+        then
+            read -r id < "${URIMARK_DATA_DIR}/next.id"
+        else
+            delete_tbl_urimark="DELETE FROM tbl_urimark WHERE id = '${id}';"
+        fi
+
+        ((${#tags[@]} == 0)) && tags+=(${_um_options[tag_default]:-})
+        [[ ${tags[@]} ]] && {
+            printf -v insert_tbl_tags "INSERT OR IGNORE INTO tbl_tags (tag) VALUES ('%s\n" "${tags[@]/%/\');}"
+            printf -v insert_tbl_tags_urimark "INSERT OR IGNORE INTO tbl_tags_urimark (tbl_urimark_id, tbl_tags_key) VALUES ('${id}', (SELECT key FROM tbl_tags WHERE tag = '%s\n" "${tags[@]/%/\'));}"
+        }
+
+        ((${#references[@]} == 0)) && references+=(${_um_options[reference_default]:-})
+        [[ ${references[@]} ]] && {
+            printf -v insert_tbl_references_urimark "INSERT OR IGNORE INTO tbl_references_urimark (tbl_urimark_id, tbl_references_key) VALUES ('${id}', (SELECT key FROM tbl_references WHERE ref = '%s\n" "${references[@]/%/\'));}"
+        }
+
+        [[ ${name:-${_um_options[name_default]}} ]] && {
+            insert_tbl_names="INSERT OR IGNORE INTO tbl_names (name) VALUES ('${name:-${_um_options[name_default]}}');"
+            insert_tbl_urimark_name=",(SELECT key FROM tbl_names WHERE name = '${name:-${_um_options[name_default]}}')"
+        }
+
+        [[ ${description:-${_um_options[description_default]}} ]] && {
+            insert_tbl_descriptions="INSERT OR IGNORE INTO tbl_descriptions (desc) VALUES ('${description:-${_um_options[description_default]}}');"
+            insert_tbl_urimark_description=",(SELECT key FROM tbl_descriptions WHERE desc = '${description:-${_um_options[description_default]}}')"
+        }
+
+        sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output "${URIMARK_DATA_DIR}/urimark.log"
+PRAGMA automatic_index = "1";
+PRAGMA checkpoint_fullfsync = "0";
+PRAGMA journal_mode = "MEMORY";
+PRAGMA journal_size_limit = "-1";
+PRAGMA synchronous = "0";
+PRAGMA foreign_keys = "1";
+PRAGMA locking_mode = "NORMAL";
+PRAGMA max_page_count = "1073741823";
+PRAGMA page_size = "32767";
+PRAGMA recursive_triggers = "0";
+PRAGMA secure_delete = "1";
+PRAGMA temp_store = "2";
+PRAGMA wal_autocheckpoint = "1000";
+PRAGMA user_version = "0";
+.output stdout
+
+BEGIN TRANSACTION;
+
+${delete_tbl_urimark}
+
+INSERT OR IGNORE INTO tbl_authorities (auth) VALUES ('${authority}');
+INSERT OR IGNORE INTO tbl_parts (part) VALUES ('${part}');
+${insert_tbl_names}
+${insert_tbl_descriptions}
+
+INSERT OR IGNORE INTO tbl_urimark (id, tbl_schemes_key, tbl_authorities_key, tbl_parts_key ${insert_tbl_names:+, tbl_names_key} ${insert_tbl_descriptions:+, tbl_descriptions_key})
+VALUES
+    (
+        '${id}',
+        (SELECT key FROM tbl_schemes WHERE scheme = '${scheme}'),
+        (SELECT key FROM tbl_authorities WHERE auth = '${authority}'),
+        (SELECT key FROM tbl_parts WHERE part = '${part}')
+        ${insert_tbl_urimark_name}
+        ${insert_tbl_urimark_description}
+    );
+
+${insert_tbl_references_urimark}
+${insert_tbl_tags}
+${insert_tbl_tags_urimark}
+
+END TRANSACTION;
+
+.output "${URIMARK_DATA_DIR}/next.id"
+SELECT id_next FROM view_calc_id_next;
+
+.quit
+SQLITE
+    }
+
+    function __um_add_parse_uri
+    {
+        uri=${uri%*/}
+        scheme=${uri%%:*}
+        [[ $scheme =~ ^(https?|ftps?|davs?|gopher|webdavs?)$ ]] || { echo "Error: Wrong scheme" 1>&2 ; exit 1 ; }
+        IFS='/' read -r authority part <<< "${uri##*://}"
+        [[ $authority =~ ^.*\.[^0-9]*$ ]] || { echo "Error: Malformed uri" 1>&2 ; exit 1 ; }
+        part=/${part%%/}
     }
 
     if (($# == 0))
     then
-        operators[or]=1
-        cut -d '|' -f 1,2 "${URIMARK_DATA_DIR}/_index" | \
-            tr -d '"' | \
-            tr '|' ' ' \
-            > "${URIMARK_TMP_DIR}/or1"
-    else
-        for i
-        do
-            read -r var val <<< "${i/=/ }"
-            if [[ $var == and ]]
-            then
-                operator=and
-                operators[and]=$((${operators[and]} + 1))
-            elif [[ $var == not ]]
-            then
-                if [[ $1 == not ]]
-                then
-                    shift 1
-                    operator=or
-                    not=not
-                else
-                    operator=not
-                fi
-            elif [[ $var == or ]]
-            then
-                operator=or
-            else
-                operator=${operator:-or}
-                operators[$operator]=${operators[$operator]:-1}
-                case $var in
-                    uuid)
-                            __um_query_parse_val
-                            if [[ $action == rebuild ]]
-                            then
-                                if [[ $rebuild_index == rebuild_index ]]
-                                then
-                                    find -H "$URIMARK_DATA_DIR" -mindepth 2 -type f \
-                                            ! -name _index -regextype posix-egrep \
-                                            ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}/.*$" \
-                                            -printf '%P\n' |
-                                        tr '/' ' ' \
-                                        >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                                else
-                                    find -H "$URIMARK_DATA_DIR" -mindepth 1 -maxdepth 1 -type d \
-                                            -regextype posix-egrep \
-                                            ${not:+\!} -regex "^${URIMARK_DATA_DIR}/${pattern}$" \
-                                            -printf '%P\n' |
-                                        tr '/' ' ' \
-                                        >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                                fi
-                            else
-                                egrep ${not:+-v} \
-                                        -e "^\"${pattern}\"\|(.*)$" "${URIMARK_DATA_DIR}/_index" \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            fi
-                            ;;
-                    id)
-                            [[ $val =~ first ]] && \
-                                val=${val//first/$(__um_calculating_id first)}
-                            [[ $val =~ last ]] && \
-                                val=${val//last/$(__um_calculating_id last)}
-                            if [[ $val =~ - ]]
-                            then
-                                for id in ${val//-/ }
-                                do
-                                    if [[ $id =~ ^\^ ]]
-                                    then
-                                        id=${id#^}
-                                    else
-                                        id=${id/#/.\*}
-                                    fi
-                                    if [[ $id =~ \$$ ]]
-                                    then
-                                        id=${id/%$/}
-                                    else
-                                        id=${id/%/.\*}
-                                    fi
-                                    ids+=($id)
-                                done
-                                while :
-                                do
-                                    if [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; \
-                                            __um_query id=^${ids[0]}$ 2>/dev/null && \
-                                            __um_query_post 2>/dev/null) ]]
-                                    then
-                                        break
-                                    else
-                                        ids[0]=$((${ids[0]} + 1))
-                                    fi
-                                done
-                                while :
-                                do
-                                    if [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; \
-                                            __um_query id=^${ids[1]}$ 2>/dev/null && \
-                                            __um_query_post 2>/dev/null) ]]
-                                    then
-                                        break
-                                    else
-                                        ids[1]=$((${ids[1]} - 1))
-                                    fi
-                                done
-                                sort -t '|' -k 2.2n "${URIMARK_DATA_DIR}/_index" | \
-                                    sed -r -n \
-                                        -e "/^(\"[^\"\|]*\"\|){1}\"${ids[0]}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){1}\"${ids[1]}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif [[ $val =~ \; ]]
-                            then
-                                for id in ${val//;/ }
-                                do
-                                    if [[ $id =~ ^\^ ]]
-                                    then
-                                        id=${id#^}
-                                    else
-                                        id=${id/#/.\*}
-                                    fi
-
-                                    if [[ $id =~ \$$ ]]
-                                    then
-                                        id=${id/%$/}
-                                    else
-                                        id=${id/%/.\*}
-                                    fi
-                                    ids+=($id)
-                                done
-                                printf -v pattern '%s|' "${ids[@]}"
-                                egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){1}\"(${pattern%|*})\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            else
-                                __um_query_parse_val
-                                egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){1}\"${pattern}\"\|(\"[^\"\|]*\"\|){9}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            fi
-                            ;;
-                    bd)
-                            for time in ${val//;/ }
-                            do
-                                if [[ $time =~ ^\^ ]]
-                                then
-                                    time=${time#^}
-                                else
-                                    time=${time/#/.\*}
-                                fi
-                                if [[ $time =~ \$$ ]]
-                                then
-                                    time=${time/%$/}
-                                else
-                                    time=${time/%/.\*}
-                                fi
-                                if [[ $time =~ ^(\.\*|)(first|last)(\.\*|)$ ]]
-                                then
-                                    times+=(${BASH_REMATCH//${BASH_REMATCH//.\*/}/$(__um_calculating_date 3 "${BASH_REMATCH//.\*/}")})
-                                else
-                                    times+=($(date --date="${time//.\*/}" +%s))
-                                fi
-                            done
-                            if ((${#times[@]} == 1))
-                            then
-                                egrep ${not:+-v} \
-                                        -e "^(\"[^\"\|]*\"\|){2}\"${times[0]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$" \
-                                        "${URIMARK_DATA_DIR}/_index" \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#times[@]} == 2 ))
-                            then
-                                times[0]=$(__um_query_binary ${times[0]//.\*/} 1 3)
-                                times[1]=$(__um_query_binary ${times[1]//.\*/} 2 3)
-                                sort -t '|' -k 3.2n "${URIMARK_DATA_DIR}/_index" | \
-                                    sed -r -n \
-                                        -e "/^(\"[^\"\|]*\"\|){2}\"${times[0]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){2}\"${times[1]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                        -e "/^(\"[^\"\|]*\"\|){2}\"${times[1]}\"\|(\"[^\"\|]*\"\|){8}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            fi
-                            ;;
-                    md)
-                            for time in ${val//;/ }
-                            do
-                                if [[ $time =~ ^\^ ]]
-                                then
-                                    time=${time#^}
-                                else
-                                    time=${time/#/.\*}
-                                fi
-                                if [[ $time =~ \$$ ]]
-                                then
-                                    time=${time/%$/}
-                                else
-                                    time=${time/%/.\*}
-                                fi
-                                if [[ $time =~ ^(\.\*|)(first|last)(\.\*|)$ ]]
-                                then
-                                    times+=(${BASH_REMATCH//${BASH_REMATCH//.\*/}/$(__um_calculating_date 4 "${BASH_REMATCH//.\*/}")})
-                                else
-                                    times+=($(date --date="${time//.\*/}" +%s))
-                                fi
-                            done
-                            if ((${#times[@]} == 1))
-                            then
-                                egrep ${not:+-v} \
-                                        -e "^(\"[^\"\|]*\"\|){3}\"${times[0]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$" \
-                                        "${URIMARK_DATA_DIR}/_index" \
-                                    >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            elif (( ${#times[@]} == 2 ))
-                            then
-                                times[0]=$(__um_query_binary ${times[0]//.\*/} 1 4)
-                                times[1]=$(__um_query_binary ${times[1]//.\*/} 2 4)
-                                    sort -t '|' -k 4.2n "${URIMARK_DATA_DIR}/_index" | \
-                                        sed -r -n \
-                                            -e "/^(\"[^\"\|]*\"\|){3}\"${times[0]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/,/^(\"[^\"\|]*\"\|){3}\"${times[1]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                            -e "/^(\"[^\"\|]*\"\|){3}\"${times[1]}\"\|(\"[^\"\|]*\"\|){7}(\"[^\"\|]*\"){1}$/${not:+!}p" \
-                                        >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            fi
-                            ;;
-                    scheme)
-                            __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){4}\"${pattern}\"\|(\"[^\"\|]*\"\|){6}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    authority)
-                            __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){5}\"${pattern}\"\|(\"[^\"\|]*\"\|){5}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    part)
-                            __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){6}\"${pattern}\"\|(\"[^\"\|]*\"\|){4}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    name)
-                            __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){7}\"${pattern}\"\|(\"[^\"\|]*\"\|){3}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    description)
-                            __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){8}\"${pattern}\"\|(\"[^\"\|]*\"\|){2}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    hierarchy)
-                            __um_query_parse_val
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){9}\"${pattern}\"\|(\"[^\"\|]*\"\|){1}(\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    tag)
-                            for t in ${val//;/ }
-                            do
-                                if [[ $t =~ ^\^ ]]
-                                then
-                                    t=${t#^}
-                                else
-                                    t=${t/#/.\*}
-                                fi
-                                if [[ $t =~ \$$ ]]
-                                then
-                                    t=${t/%$/}
-                                else
-                                    t=${t/%/.\*}
-                                fi
-                                tags+=("$t")
-                            done
-                            printf -v pattern '%s|' "${tags[@]}"
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){10}\"([^\"\|]*;|)(${pattern%|*})(;[^\"\|]*|)\"(\|\"[^\"\|]*\"){1}$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    reference)
-                            for r in ${val//;/ }
-                            do
-                                if [[ $r =~ ^\^ ]]
-                                then
-                                    r=${r#^}
-                                else
-                                    r=${r/#/.\*}
-                                fi
-                                if [[ $r =~ \$$ ]]
-                                then
-                                    r=${r/%$/}
-                                else
-                                    r=${r/%/.\*}
-                                fi
-                                refs+=("$r")
-                            done
-                            printf -v pattern '%s|' "${refs[@]}"
-                            egrep ${not:+-v} \
-                                    -e "^(\"[^\"\|]*\"\|){11}\"([^\"\|]*;|)(${pattern%|*})(;[^\"\|]*|)\"$" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                    uri)
-                            query_uri_schemes=${val%%:*}
-                            IFS='/' read -r query_uri_authority \
-                                    query_uri_schemes_specific_parts \
-                                <<< "${val##*://}"
-                            query_uri_schemes_specific_parts=/${query_uri_schemes_specific_parts}
-                            fgrep ${not:+-v} \
-                                    "|\"${query_uri_schemes}\"|\"${query_uri_authority}\"|\"${query_uri_schemes_specific_parts}\"|" \
-                                    "${URIMARK_DATA_DIR}/_index" \
-                                >> "${URIMARK_TMP_DIR}/${operator}${operators[$operator]}"
-                            ;;
-                esac
-                ids=()
-                refs=()
-                tags=()
-                times=()
-                not=
-            fi
-        done
-    fi
-}
-
-__um_query_binary()
-{
-    declare \
-        b= \
-        begin= \
-        e= \
-        end= \
-        middle= \
-        pattern=
-
-    declare -a array=()
-
-    pattern=$1
-    if (($2 == 1))
-    then
-        b=1
-    else
-        e=1
-    fi
-    mapfile -t array \
-        < <(cut -d '|' -f "$3" "${URIMARK_DATA_DIR}/_index" | \
-        tr -d '"' | \
-        sort -n)
-    begin=0
-    end=$((${#array[@]} - 1))
-
-    while ((begin <= end))
-    do
-        middle=$((begin + (end-begin) / 2))
-        if ((${array[middle]} >= pattern))
-        then
-            if ((e && ${array[middle+1]:-${array[middle]}} <= pattern))
-            then
-                break
-            else
-                end=$((middle - 1))
-            fi
-        elif ((${array[middle]} <= pattern))
-        then
-            if ((b && ${array[middle+1]:-${array[middle]}} >= pattern))
-            then
-                break
-            else
-                begin=$((middle + 1))
-            fi
-        fi
-    done
-
-    printf '%s\n' "${array[middle]}"
-}
-
-__um_query_post()
-{
-    if [[ ${operators[and]} -eq 1 ]]
-    then
-        __um_query_post_and() { sort -u "${URIMARK_TMP_DIR}/and1" ; }
-    elif [[ ${operators[and]} -eq 2 ]]
-    then
-        __um_query_post_and()
-        {
-            comm -12 <(sort -u "${URIMARK_TMP_DIR}/and1") <(sort -u "${URIMARK_TMP_DIR}/and2")
-        }
-    elif [[ ${operators[and]} -gt 2 ]]
-    then
-        __um_query_post_and()
-        {
-            declare i=
-            for i in $(eval "printf '%s\n' "${URIMARK_TMP_DIR}"/and{2..${operators[and]}}")
-            do
-                if ((${i:${#a}-1} == ${operators[and]}))
-                then
-                    comm -12 <(sort -u "${URIMARK_TMP_DIR}/and1") <(sort -u "$i")
-                else
-                    comm -12 <(sort -u "${URIMARK_TMP_DIR}/and1") <(sort -u "$i") > "${URIMARK_TMP_DIR}/and1$$"
-                    cp -- "${URIMARK_TMP_DIR}/and1$$" "${URIMARK_TMP_DIR}/and1"
-                fi
-            done
-        }
-    fi
-
-    if [[ ${operators[or]} && ${operators[and]} ]]
-    then
-        __um_query_post_or()
-        {
-            comm -12 <(sort -u "${URIMARK_TMP_DIR}/or1") <(__um_query_post_and)
-        }
-    elif ((${operators[or]}))
-    then
-        __um_query_post_or() { sort -u "${URIMARK_TMP_DIR}/or1" ; }
-    elif ((${operators[and]}))
-    then
-        __um_query_post_or() { __um_query_post_and ; }
-    fi
-
-    if [[ ${operators[or]} && ${operators[not]} ]]
-    then
-        __um_query_post_result() { comm -23 <(__um_query_post_or) <(sort -u "${URIMARK_TMP_DIR}/not1") | sort -t '|' -k 2.2n ; }
-    else
-        __um_query_post_result() { __um_query_post_or | sort -t '|' -k 2.2n ; }
-    fi
-
-    [[ ${hook[${hook_chosen} header]} ]] && eval "${hook[${hook_chosen} header]}"
-    eval "${hook[${hook_chosen} preprocess]} __um_query_post_result ${hook[${hook_chosen} postprocess]}"
-    [[ ${hook[${hook_chosen} footer]} ]] && eval "${hook[${hook_chosen} footer]}"
-}
-
-__um_add()
-{
-    declare \
-        aid= \
-        authority= \
-        auuid= \
-        bd= \
-        date= \
-        description= \
-        hierarchy= \
-        i= \
-        id= \
-        md= \
-        name= \
-        part= \
-        scheme= \
-        succeeded= \
-        uri= \
-        uuid=
-
-    declare -a \
-        references=() \
-        tags=()
-
-    declare -ga dir_stack=()
-
-    if (($# == 0))
-    then
         read -re -p "URI: " uri
-        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
-        then
-            { echo "Wrong scheme." 1>&2 ; return 1 ; }
-        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri%*/}" 2>/dev/null && \
-                __um_query_post 2>/dev/null) ]]
-        then
-            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
-        fi
+        __um_add_parse_uri
+        read -re -p "Id:" -i "next" id
         read -re -p "Name: " name
         read -re -p "Description: " description
-        IFS=';' read -re -p "Tags: " -a tags
-        read -re -p "Hierarchy: " hierarchy
-        IFS=';' read -re -p "References: " -a references
+        IFS=',' read -re -p "Tags: " -a tags
+        IFS=',' read -re -p "References: " -a references
     else
         for i
         do
             case $i in
                 uri=?*)
-                        uri=${i/uri=/}
-                        if [[ ! $uri =~ ^(http|https|ftp|ftps|dav|davs|gopher|webdav|webdavs):// ]]
-                        then
-                            { echo "Wrong scheme." 1>&2 ; return 1 ; }
-                        elif [[ $(URIMARK_TMP_DIR=${URIMARK_TMP_DIR}_ ; __um_query uri="${uri%*/}" 2>/dev/null && \
-                                __um_query_post 2>/dev/null) ]]
-                        then
-                            { echo "URI '$uri' has already been recorded." 1>&2 ; return 1 ; }
-                        fi
-                        ;;
+                    uri=${i/uri=/}
+                    __um_add_parse_uri
+                    ;;
                 name=?*)
-                        name=${i/name=/}
-                        ;;
+                    name=${i/name=/}
+                    ;;
                 description=?*)
-                        description=${i/description=/}
-                        ;;
-                hierarchy=?*)
-                        hierarchy=${i/hierarchy=/}
-                        ;;
+                    description=${i/description=/}
+                    ;;
                 tag=?*)
-                        IFS=';' read -r -a tags <<< "${i/tag=/}"
-                        ;;
+                    IFS=',' read -r -a tags <<< "${i/tag=/}"
+                    ;;
                 reference=?*)
-                        IFS=';' read -r -a references <<< "${i/reference=/}"
-                        ;;
+                    IFS=',' read -r -a references <<< "${i/reference=/}"
+                    ;;
+                where)
+                    continue
+                    ;;
+                id=?*)
+                    id=${i/id=/}
             esac
         done
-        [[ ! $uri ]] && { echo "We need an URI to record." 1>&2 ; return 1 ; }
     fi
 
-    date=$(date --date=now +%s)
-
-    ((${#tags[@]} == 0)) && tags[0]=$tag_default
-    ((${#references[@]} == 0)) && references[0]=$reference_default
-
-    bd=$date
-    md=$date
-    id=$(__um_calculating_id next)
-    scheme=${uri%%:*}
-    IFS='/' read -r authority part <<< "${uri##*://}"
-    part=/${part%%/}
-
-    read -r auuid aid < <(hook_chosen=um_default ; __um_query authority=^${authority}$ 2>/dev/null && \
-        __um_query_post 2>/dev/null)
-    if [[ $auuid && $aid ]]
+    if __um_add_record
     then
-        uuid=$auuid
-        pushd "$uuid" 1>/dev/null
-        printf '%s\n' "Authority has already been recorded at file://${URIMARK_DATA_DIR}/${auuid}" 1>&2
-        __um_add_print && succeeded=succeeded
+        { printf '%s\n' "Add id ${id} ${uri%*/}" 1>&2 ; exit 0 ; }
     else
-        uuid=$(__um_random 8)
-        mkdir -p "${URIMARK_DATA_DIR}/${uuid}" && \
-            printf '%s\n' "New authority has been recorded at file://${URIMARK_DATA_DIR}/${uuid}" 1>&2 && \
-            printf '%s\n' "${URIMARK_DATA_DIR}/${uuid}" >> "${URIMARK_DATA_DIR}/_uuids"
-        pushd "$uuid" 1>/dev/null
-        __um_add_print && succeeded=succeeded
-    fi
-
-    if [[ $succeeded ]]
-    then
-        dir_stack=($(dirs -l -p))
-        { printf '%s\n' "New URI with id ${id} has been recorded." 1>&2 ; return 0 ; }
-    else
-         { echo "URI has not been recorded." 1>&2 ; return 1 ; }
+        exit 1
     fi
 }
 
-__um_add_print()
+__um_delete ()
 {
     declare \
-            j= \
-            k=
-
-    exec 3>"${URIMARK_DATA_DIR}/${uuid}/${id}"
-
-    printf '%s\n' "uuid=$uuid
-date_build=$bd
-date_modification=$md
-uri_authority=\"${authority}\"
-uri_scheme=\"${scheme}\"
-uri_scheme_specific_part=\"${part}\"
-uri_scheme_specific_part_description=\"${description:-$description_default}\"
-uri_scheme_specific_part_hierarchy=\"${hierarchy:-$hierarchy_default}\"
-uri_scheme_specific_part_name=\"${name:-$name_default}\"
-uri_scheme_specific_part_id=$id" >&3
-
-    for j in "${!references[@]}"
-    do
-        printf '%s\n' "uri_scheme_specific_part_reference[$j]=${references[$j]}"
-    done 1>&3
-
-    for k in "${!tags[@]}"
-    do
-        printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${tags[$k]}\""
-    done 1>&3
-
-    exec 3<&-
-}
-
-__um_edit()
-{
-    declare \
-        date= \
-        date_build= \
-        date_modification= \
-        eid= \
-        euuid= \
-        file_tmp= \
-        j= \
-        k= \
-        md5_post= \
-        md5_pre= \
-        modification= \
-        uri_authority= \
-        uri_scheme= \
-        uri_scheme_specific_part= \
-        uri_scheme_specific_part_description= \
-        uri_scheme_specific_part_hierarchy= \
-        uri_scheme_specific_part_id= \
-        uri_scheme_specific_part_name= \
-        uuid=
-
-    declare -ga dir_stack=()
-
-    declare -a \
-       uri_scheme_specific_part_reference=() \
-       uri_scheme_specific_part_tag=()
-
-    if (($# == 0))
-    then
-        { echo "No arguments has been specified." 1>&2 ; return 1 ; }
-    else
-        while read -r euuid eid
-        do
-            file_tmp=${URIMARK_TMP_DIR}/urimark.${RANDOM}
-            cp -- "${URIMARK_DATA_DIR}/${euuid}/${eid}" "$file_tmp"
-            pushd "$euuid" >/dev/null
-            md5_pre=$(md5sum "$file_tmp")
-            $editor "$file_tmp" </dev/tty
-            date=$(date --date=now +%s)
-            md5_post=$(md5sum "$file_tmp")
-            if [[ $md5_pre != $md5_post ]]
-            then
-                (
-                    source "$file_tmp"
-                    date_modification=$date
-                    {
-                        printf '%s\n' "uuid=$uuid
-date_build=$date_build
-date_modification=$date_modification
-uri_authority=\"${uri_authority}\"
-uri_scheme=\"${uri_scheme}\"
-uri_scheme_specific_part=\"${uri_scheme_specific_part}\"
-uri_scheme_specific_part_description=\"${uri_scheme_specific_part_description}\"
-uri_scheme_specific_part_hierarchy=\"${uri_scheme_specific_part_hierarchy}\"
-uri_scheme_specific_part_name=\"${uri_scheme_specific_part_name}\"
-uri_scheme_specific_part_id=$uri_scheme_specific_part_id"
-                        for j in "${!uri_scheme_specific_part_reference[@]}"
-                        do
-                            printf '%s\n' "uri_scheme_specific_part_reference[$j]=${uri_scheme_specific_part_reference[$j]}"
-                        done
-                        for k in "${!uri_scheme_specific_part_tag[@]}"
-                        do
-                            printf '%s\n' "uri_scheme_specific_part_tag[$k]=\"${uri_scheme_specific_part_tag[$k]}\""
-                        done
-                    } > "${URIMARK_DATA_DIR}/${euuid}/${eid}"
-                    printf '%s\n' "Data set with id ${eid} has been modified." 1>&2
-                )
-                modification=modification
-            else
-                printf '%s\n' "Data set with id ${eid} has not been modified." 1>&2
-            fi
-        done < <(hook_chosen=um_default ; __um_query "$@" && __um_query_post)
-        [[ $modification == modification ]] &&
-        {
-            dir_stack=($(dirs -l -p))
-            __um_rebuild_index
-        }
-    fi
-}
-
-__um_delete()
-{
-    declare \
-        d= \
         delete_all= \
-        response=
+        response= \
+        uri=
+
+    declare -i id=
 
     declare -a deletion=()
-
-    declare -ga dir_stack=()
 
     exec 3<&0
 
     if (($# == 0))
     then
-        { echo "We need to specify a filter." 1>&2 ; return 1 ; }
+        { echo "Error: No filter specified" 1>&2 ; exit 1 ; }
     else
-        while read -r
+        while read -r id uri
         do
-            if [[ $delete_all == delete_all || $non_interactive == non_interactive ]]
+            if [[ $delete_all == delete_all || ${_um_options[non_interactive]} == non_interactive ]]
             then
-                deletion+=("$REPLY")
+                deletion+=("DELETE FROM tbl_urimark WHERE id = '${id}';${id}")
             else
-                printf 'UUID: %s\nID:   %s\n' $REPLY
-                read -u 3 -p "Do you really wanne delete this record? (y/n/all/quit) " response
+                printf 'ID    => %s\nURI   => %s\n' "$id" "$uri"
+                read -u 3 -p "Do you really wanne delete this record? (y/n/all/selected/quit) " response
                 case $response in
-                    all)    delete_all=delete_all   ;&
-                    y|yes)  deletion+=("$REPLY")    ;;
-                    quit)   deletion=() ; break    ;;
-                    *)      continue               ;;
+                    a|all)
+                        delete_all=delete_all
+                        ;&
+                    y|yes)
+                        deletion+=("DELETE FROM tbl_urimark WHERE id = '${id}';${id}")
+                        ;;
+                    s|selected)
+                        break
+                        ;;
+                    q|quit)
+                        deletion=()
+                        { echo "Quit deleting" 1>&2 ; exit 0 ; }
+                        ;;
+                    *)
+                        continue
                 esac
             fi
-        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post)
-        if ((${#deletion[@]} != 0))
+        done < <(_um_options[hook_chosen]=um_default1 ; __um_query "$@")
+        exec 3<&-
+        if ((${#deletion[@]} == 0))
         then
-            for d in "${deletion[@]}"
-            do
-                pushd "${d% *}" >/dev/null
-                echo "Deleting ${URIMARK_DATA_DIR}/${d% *}/${d#* }" 1>&2
-                rm -- "${URIMARK_DATA_DIR}/${d% *}/${d#* }"
-            done
-            dir_stack=($(dirs -l -p))
-            { echo "Done." 1>&2 ; return 0 ; }
+            { echo "Error: No uri has been deleted" 1>&2 ; exit 1 ; }
         else
-            { echo "No Record has been deleted." 1>&2 ; return 1 ; }
+            printf '%s\n' "${deletion[@]/*;/Delete id }" 1>&2
+            printf -v deletion '%s' "${deletion[@]/;*/;}"
+            sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output "${URIMARK_DATA_DIR}/urimark.log"
+PRAGMA automatic_index = "1";
+PRAGMA checkpoint_fullfsync = "0";
+PRAGMA journal_mode = "MEMORY";
+PRAGMA journal_size_limit = "-1";
+PRAGMA synchronous = "0";
+PRAGMA locking_mode = "NORMAL";
+PRAGMA max_page_count = "1073741823";
+PRAGMA page_size = "32767";
+PRAGMA recursive_triggers = "0";
+PRAGMA secure_delete = "1";
+PRAGMA temp_store = "2";
+PRAGMA wal_autocheckpoint = "1000";
+PRAGMA user_version = "0";
+.output stderr
+
+BEGIN TRANSACTION;
+${deletion}
+COMMIT;
+
+.output "${URIMARK_DATA_DIR}/next.id"
+SELECT id_next FROM view_calc_id_next;
+
+.quit
+SQLITE
         fi
     fi
-
-    exec 3<&-
 }
 
-__um_modify()
+__um_edit ()
 {
     declare \
-        date= \
+        db_authority= \
+        db_ctime= \
+        db_description= \
+        db_id= \
+        db_mtime= \
+        db_name= \
+        db_part= \
+        db_references
+        db_scheme= \
+        db_tags= \
+        delete_tbl_references_urimark= \
+        delete_tbl_tags_urimark= \
+        editor=${_um_options[editor]} \
+        file_tmp= \
+        insert_tbl_descriptions= \
+        insert_tbl_names= \
+        insert_tbl_tags= \
+        insert_tbl_tags_urimark= \
+        md5_post= \
+        md5_pre= \
+        val= \
+        var=
+
+    declare -a \
+        references=() \
+        tags=() \
+        update_tbl_urimark=()
+
+    if (($# == 0))
+    then
+        { echo "Error: No filter specified" 1>&2 ; exit 1 ; }
+    else
+        mkdir -p -- "$URIMARK_TMP_DIR"
+        while IFS='|' read -r db_id db_ctime db_mtime db_scheme db_authority db_part db_name db_description db_tags db_references
+        do
+            file_tmp=${URIMARK_TMP_DIR}/urimark.${RANDOM}
+            printf '%s\n' "## * Editable are: name, description, tags and references
+## * Do not forget to separate tags and references with semicolon
+## * After modification this file will be read with the help of 'eval'.
+##   So you may use expansions and substitions.
+
+ID          ${db_id}
+CTIME       ${db_ctime}
+MTIME       ${db_mtime}
+SCHEME      ${db_scheme}
+AUTHORITY   ${db_authority}
+PART        ${db_part}
+NAME        ${db_name}
+DESCRIPTION ${db_description}
+TAGS        ${db_tags}
+REFS        ${db_references}" > "$file_tmp"
+            md5_pre=$(md5sum "$file_tmp")
+            $editor "$file_tmp" </dev/tty
+            md5_post=$(md5sum "$file_tmp")
+            if [[ $md5_pre != $md5_post ]]
+            then
+                update_tbl_urimark=("UPDATE tbl_urimark SET")
+                while read -r var val
+                do
+                    [[ $val ]] && {
+                        case ${var,,} in
+                            tags)
+                                [[ $val != $db_tags ]] && {
+                                    eval "val=$val"
+                                    delete_tbl_tags_urimark="DELETE FROM tbl_tags_urimark WHERE tbl_urimark_id = '${db_id//\"/}';"
+                                    mapfile -t tags < <(printf '%s\n' "${val//\;/$'\n'}")
+                                    printf -v insert_tbl_tags "INSERT OR IGNORE INTO tbl_tags (tag) VALUES ('%s\n" "${tags[@]/%/\');}"
+                                    printf -v insert_tbl_tags_urimark "INSERT OR IGNORE INTO tbl_tags_urimark (tbl_urimark_id, tbl_tags_key) VALUES ('${db_id//\"/}',(SELECT key FROM tbl_tags WHERE tag = '%s\n" "${tags[@]/%/\'));}"
+                                }
+                                ;;
+                            refs)
+                                [[ $val != $db_references ]] && {
+                                    eval "val=$val"
+                                    delete_tbl_references_urimark="DELETE FROM tbl_references_urimark WHERE tbl_urimark_id = '${db_id//\"/}';"
+                                    mapfile -t references < <(printf '%s\n' "${val//\;/$'\n'}")
+                                    printf -v insert_tbl_references_urimark "INSERT OR IGNORE INTO tbl_references_urimark (tbl_urimark_id, tbl_references_key) VALUES ('${db_id//\"/}',(SELECT key FROM tbl_references WHERE ref = '%s\n" "${references[@]/%/\'));}"
+                                }
+                                ;;
+                            name)
+                                [[ $val != $db_name ]] && {
+                                    eval "val=$val"
+                                    insert_tbl_names="INSERT OR IGNORE INTO tbl_names (name) VALUES ('${val}');"
+                                    update_tbl_urimark+=("tbl_names_key = (SELECT key FROM tbl_names WHERE name = '${val}'),")
+                                }
+                                ;;
+                            description)
+                                [[ $val != $db_description ]] && {
+                                    eval "val=$val"
+                                    insert_tbl_descriptions="INSERT OR IGNORE INTO tbl_descriptions (desc) VALUES ('${val}');"
+                                    update_tbl_urimark+=("tbl_descriptions_key = (SELECT key FROM tbl_descriptions WHERE desc = '${val}'),")
+                                }
+                                ;;
+                            *)
+                                continue
+                        esac
+                    }
+                    unset -v var val
+                done < "$file_tmp"
+                if ((${#update_tbl_urimark[@]} > 1))
+                then
+                    update_tbl_urimark[-1]=${update_tbl_urimark[-1]%,}
+                    update_tbl_urimark+=("WHERE id = '${db_id//\"/}';")
+                else
+                    unset -v update_tbl_urimark
+                fi
+                printf '%s\n' "Edit id ${db_id//\"/}" 1>&2
+                sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output "${URIMARK_DATA_DIR}/urimark.log"
+PRAGMA automatic_index = "1";
+PRAGMA checkpoint_fullfsync = "0";
+PRAGMA journal_mode = "MEMORY";
+PRAGMA journal_size_limit = "-1";
+PRAGMA synchronous = "0";
+PRAGMA locking_mode = "NORMAL";
+PRAGMA max_page_count = "1073741823";
+PRAGMA page_size = "32767";
+PRAGMA recursive_triggers = "0";
+PRAGMA secure_delete = "1";
+PRAGMA temp_store = "2";
+PRAGMA wal_autocheckpoint = "1000";
+PRAGMA user_version = "0";
+.output stdout
+
+BEGIN TRANSACTION;
+${insert_tbl_names}
+${insert_tbl_descriptions}
+${update_tbl_urimark[*]}
+${delete_tbl_tags_urimark}
+${insert_tbl_tags}
+${insert_tbl_tags_urimark}
+
+${delete_tbl_references_urimark}
+${insert_tbl_references_urimark}
+COMMIT;
+
+.quit
+SQLITE
+            else
+                echo "Error: Record ${db_id//\"/} has not been modified" 1>&2
+            fi
+        done < <(_um_options[hook_chosen]=um_default2 ; __um_query "$@")
+        rm -fr -- "$URIMARK_TMP_DIR" 2>/dev/null
+    fi
+}
+
+__um_modify ()
+{
+    declare \
+        description= \
         i= \
-        j= \
-        k= \
         modify_all= \
-        record= \
-        ref= \
+        name= \
+        r= \
+        re= \
+        re_m= \
+        re_p= \
         response= \
-        tag=
+        t= \
+        ta= \
+        ta_m= \
+        ta_p= \
+        uri=
+
+    declare -i id=
 
     declare -a \
        modification=() \
        references=() \
-       tags=()
-
-    declare -ga dir_stack=()
+       references_m=() \
+       references_p=() \
+       tags=() \
+       tags_m=() \
+       tags_p=()
 
     exec 3<&0
 
-    if ((${#mods[@]} == 0))
-    then
-         { echo "We need to specify a modification pattern." 1>&2 ; return 1 ; }
-    else
-        for i in "${!mods[@]}"
-        do
-            case ${mods[i]} in
-                authority=?*)
-                        mods[i]="-e s|^(uri_authority=).*$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                scheme=?*)
-                        mods[i]="-e s|^(uri_scheme=).*$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                part=?*)
-                        mods[i]="-e s|^(uri_scheme_specific_part=).*$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                name=?*)
-                        mods[i]="-e s|^(uri_scheme_specific_part_name=).*$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                description=?*)
-                        mods[i]="-e s|^(uri_scheme_specific_part_description=).*$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                hierarchy=?*)
-                        mods[i]="-e s|^(uri_scheme_specific_part_hierarchy=).*$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                tag=?*)
-                        for j in "${patterns[@]}"
-                        do
-                            [[ $j == tag=?* ]] && tags+=("${j#*=}")
-                        done
-                        printf -v tag '%s|' "${tags[@]//^/}"
-                        tag=${tag//$/}
-                        mods[i]="-e s|^(uri_scheme_specific_part_tag\[.*\]=)\"${tag%|*}\"$|\1\"${mods[i]#*=}\"|"
-                        ;;
-                tag-=?*)
-                        mods[i]="-e /^uri_scheme_specific_part_tag\[.*\]=\"${mods[i]#*=}\"$/d"
-                        ;;
-                tag+=?*)
-                        mods[i]="-e $ i uri_scheme_specific_part_tag[$(__um_random 2)]=\"${mods[i]#*=}\""
-                        ;;
-                reference=?*)
-                        for k in "${patterns[@]}"
-                        do
-                            [[ $k == reference=?* ]] && references+=("${k#*=}")
-                        done
-                        printf -v ref '%s|' "${references[@]//^/}"
-                        ref=${ref//$/}
-                        mods[i]="-e s|^(uri_scheme_specific_part_reference\[.*\]=)${ref%|*}$|\1${mods[i]#*=}|"
-                        ;;
-                reference-=?*)
-                        mods[i]="-e /^uri_scheme_specific_part_reference\[.*\]=${mods[i]#*=}$/d"
-                        ;;
-                reference+=?*)
-                        mods[i]="-e $ i uri_scheme_specific_part_reference[$(__um_random 2)]=${mods[i]#*=}"
-                        ;;
-                *)
-                        unset -v "mods[i]"
-                        ;;
-            esac
-        done
+    for i in "${!_um_assignments[@]}"
+    do
+        case ${_um_assignments[$i]} in
+            name=?*)
+                name=${_um_assignments[$i]#*=}
+                ;;
+            description=?*)
+                description=${_um_assignments[$i]#*=}
+                ;;
+            tag=?*)
+                t=${_um_assignments[$i]#*=}
+                printf -v ta '%s\n' "${t//\,/$'\n'}"
+                tags+=($ta)
+                ;;
+            tag+=?*)
+                t_p[$i]=${_um_assignments[$i]#*+=}
+                printf -v ta_p '%s\n' "${t_p[$i]//\,/$'\n'}"
+                tags_p+=($ta_p)
+                ;;
+            tag-=?*)
+                t_m[$i]=${_um_assignments[$i]#*-=}
+                printf -v ta_m '%s\n' "${t_m[$i]//\,/$'\n'}"
+                tags_m+=($ta_m)
+                ;;
+            reference=?*)
+                r=${_um_assignments[$i]#*=}
+                printf -v re '%s\n' "${r//\,/$'\n'}" "ID"
+                references+=($re)
+                ;;
+            reference+=?*)
+                r_p=${_um_assignments[$i]#*=}
+                printf -v re_p '%s\n' "${r_p//\,/$'\n'}"
+                references_p+=($re_p)
+                ;;
+            reference-=?*)
+                r_m[$i]=${_um_assignments[$i]#*-=}
+                printf -v re_m '%s\n' "${r_m[$i]//\,/$'\n'}"
+                references_m+=($re_m)
+                ;;
+            *)
+                printf '%s\n' "Error: Malformed modificator: '${_um_assignments[$i]}'" 1>&2
+                unset -v "_um_assignments[$i]"
+        esac
+    done
 
-        while read -r
+    function __um_modify_build_query
+    {
+        [[ $name ]] && {
+            modification+=("INSERT OR IGNORE INTO tbl_names (name) VALUES ('$name');"
+            "UPDATE tbl_urimark SET tbl_names_key = (SELECT key FROM tbl_names WHERE name = '$name') WHERE id = '${id}';")
+        }
+
+        [[ $description ]] && {
+            modification+=("INSERT OR IGNORE INTO tbl_descriptions (desc) VALUES ('$description');"
+            "UPDATE tbl_urimark SET tbl_descriptions_key = (SELECT key FROM tbl_descriptions WHERE desc = '$description') WHERE id = '${id}';")
+        }
+
+        ((${#tags[@]} > 0)) && {
+            printf -v insert_tbl_tags "INSERT OR IGNORE INTO tbl_tags (tag) VALUES ('%s\n" "${tags[@]/%/\');}"
+            printf -v insert_tbl_tags_urimark "INSERT OR IGNORE INTO tbl_tags_urimark (tbl_urimark_id, tbl_tags_key) VALUES ('${id}',(SELECT key FROM tbl_tags WHERE tag = '%s\n" "${tags[@]/%/\'));}"
+            modification+=("$insert_tbl_tags"
+                "DELETE FROM tbl_tags_urimark WHERE tbl_urimark_id = '${id}';"
+                "$insert_tbl_tags_urimark")
+        }
+
+        ((${#tags_p[@]} > 0)) && {
+            printf -v insert_tbl_tags "INSERT OR IGNORE INTO tbl_tags (tag) VALUES ('%s\n" "${tags_p[@]/%/\');}"
+            printf -v insert_tbl_tags_urimark "INSERT OR IGNORE INTO tbl_tags_urimark (tbl_urimark_id, tbl_tags_key) VALUES ('${id}',(SELECT key FROM tbl_tags WHERE tag = '%s\n" "${tags_p[@]/%/\'));}"
+            modification+=("$insert_tbl_tags" "$insert_tbl_tags_urimark")
+        }
+
+        ((${#tags_m[@]} > 0)) && {
+            printf -v delete_tbl_tags_urimark "DELETE FROM tbl_tags_urimark WHERE tbl_urimark_id = '${id}' AND tbl_tags_key = (SELECT key FROM tbl_tags WHERE tag = '%s\n" "${tags_m[@]/%/\');}"
+            modification+=("$delete_tbl_tags_urimark" "INSERT OR IGNORE INTO tbl_tags_urimark (tbl_urimark_id) VALUES ('${id}');")
+        }
+
+        ((${#references[@]} > 0)) && {
+            references=("${references[@]//ID/${id}}")
+            printf -v insert_tbl_references_urimark "INSERT OR IGNORE INTO tbl_references_urimark (tbl_urimark_id, tbl_references_key) VALUES ('${id}',(SELECT key FROM tbl_references WHERE ref = '%s\n" "${references[@]/%/\'));}"
+            modification+=("DELETE FROM tbl_references_urimark WHERE tbl_urimark_id = '${id}';"
+                "$insert_tbl_references_urimark")
+        }
+
+        ((${#references_p[@]} > 0)) && {
+            printf -v insert_tbl_references_urimark "INSERT OR IGNORE INTO tbl_references_urimark (tbl_urimark_id, tbl_references_key) VALUES ('${id}',(SELECT key FROM tbl_references WHERE ref = '%s\n" "${references_p[@]/%/\'));}"
+            modification+=("$insert_tbl_references_urimark")
+        }
+
+        ((${#references_m[@]} > 0)) && {
+            printf -v delete_tbl_references_urimark "DELETE FROM tbl_references_urimark WHERE tbl_urimark_id = '${id}' AND tbl_references_key = (SELECT key FROM tbl_references WHERE ref = '%s\n" "${references_m[@]/%/\');}"
+            modification+=("$delete_tbl_references_urimark" "INSERT OR IGNORE INTO tbl_references_urimark (tbl_urimark_id, tbl_references_key) VALUES ('${id}', (SELECT key FROM tbl_references WHERE ref = '${id}'));")
+        }
+    }
+
+    if ((${#_um_assignments[@]} == 0))
+    then
+         { echo "Error: No assignments specified" 1>&2 ; exit 1 ; }
+    else
+        while read -r id uri
         do
-            if [[ $modify_all == modify_all  || $non_interactive == non_interactive ]]
+            if [[ $modify_all == modify_all  || ${_um_options[non_interactive]} == non_interactive ]]
             then
-                modification+=("${URIMARK_DATA_DIR}/${REPLY% *}/${REPLY#* }")
-                pushd "${REPLY% *}" >/dev/null
+                __um_modify_build_query
+                printf '%s\n' "Modify id ${id}" 1>&2
             else
-                printf 'UUID: %s\nID:   %s\n' $REPLY
-                read -u 3 -p "Do you really wanne modify this record? (y/n/all/quit) " response
+                printf 'ID    => %s\nURI   => %s\n' "$id" "$uri"
+                read -u 3 -p "Do you really wanne modify this record? (y/n/all/selected/quit) " response
                 case $response in
-                    all)
-                            modify_all=modify_all
-                            ;&
+                    a|all)
+                        modify_all=modify_all
+                        ;&
                     y|yes)
-                            modification+=("${URIMARK_DATA_DIR}/${REPLY% *}/${REPLY#* }")
-                            pushd "${REPLY% *}" >/dev/null
-                            ;;
-                    quit)
-                            modification=()
-                            break
-                            ;;
+                        __um_modify_build_query
+                        printf '%s\n' "Modify id ${id}" 1>&2
+                        ;;
+                    s|selected)
+                        break
+                        ;;
+                    q|quit)
+                        modification=()
+                        { echo "Quit modifying" 1>&2 ; exit 1 ; }
+                        ;;
                     *)
-                            continue
-                            ;;
+                        continue
                 esac
             fi
-        done < <(hook_chosen=um_default ; __um_query "${patterns[@]}" >/dev/null && __um_query_post)
-        if ((${#modification[@]} != 0))
+        done < <(_um_options[hook_chosen]=um_default1 ; __um_query "$@")
+        exec 3<&-
+        if ((${#modification[@]} == 0))
         then
-            dir_stack=($(dirs -l -p))
-            date=$(date --date=now +%s)
-            printf '%s\n' "${modification[@]}" | \
-                xargs -r sed -r -i \
-                    -e "/date_modification=.*/ c date_modification=${date}" "${mods[@]}"
-            { echo "Records have been modified." 1>&2 ; return 0 ; }
+            { echo "Error: No uri has been chosen" 1>&2 ; exit 1 ; }
         else
-            { echo "No Record has been modified." 1>&2 ; return 1 ; }
+            sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output "${URIMARK_DATA_DIR}/urimark.log"
+PRAGMA automatic_index = "1";
+PRAGMA checkpoint_fullfsync = "0";
+PRAGMA journal_mode = "MEMORY";
+PRAGMA journal_size_limit = "-1";
+PRAGMA synchronous = "0";
+PRAGMA locking_mode = "NORMAL";
+PRAGMA max_page_count = "1073741823";
+PRAGMA page_size = "32767";
+PRAGMA recursive_triggers = "0";
+PRAGMA secure_delete = "1";
+PRAGMA temp_store = "2";
+PRAGMA wal_autocheckpoint = "1000";
+PRAGMA user_version = "0";
+.output stdout
+
+BEGIN TRANSACTION;
+${modification[*]}
+COMMIT;
+
+.quit
+SQLITE
         fi
     fi
-
-    exec 3<&-
 }
 
-__um_rebuild()
+__um_compact()
 {
-    declare \
-        rebuild_all= \
-        response=
+    echo "Compact database" 1>&2
 
-    declare -ga dir_stack=()
+    sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output stdout
 
-    exec 3<&0
+BEGIN TRANSACTION;
+DELETE FROM tbl_authorities WHERE rowid NOT IN (SELECT tbl_authorities_key FROM tbl_urimark);
+DELETE FROM tbl_parts WHERE rowid NOT IN (SELECT tbl_parts_key FROM tbl_urimark);
+DELETE FROM tbl_tags WHERE rowid NOT IN (SELECT tbl_tags_key FROM tbl_tags_urimark);
+DELETE FROM tbl_tags_urimark WHERE tbl_urimark_id NOT IN (SELECT id FROM tbl_urimark);
+COMMIT;
 
-    if (($# == 0))
-    then
-        { echo "We need to specify a filter." 1>&2 ; return 1 ; }
-    else
-        while read -r
-        do
-            if [[ $rebuild_all == rebuild_all || $non_interactive == non_interactive ]]
-            then
-                pushd "$REPLY" >/dev/null
-            else
-                printf 'UUID: %s\n' $REPLY
-                read -u 3 -p "Do you really wanne rebuild all records with this uuid? (y/n/all/quit) " response
-                case $response in
-                    all)    rebuild_all=rebuild_all     ;&
-                    y|yes)  pushd "$REPLY" >/dev/null   ;;
-                    quit)   DIRSTACK=(); break          ;;
-                    *)      continue                    ;;
-                esac
-            fi
-        done < <(hook_chosen=um_default ; __um_query "$@" >/dev/null && __um_query_post | cut -d ' ' -f 1 | sort -u)
-        if ((${#DIRSTACK[@]} > 1 ))
-        then
-            dir_stack=($(dirs -l -p))
-            return 0
-        else
-            { echo "No index has been rebuild." 1>&2 ; return 1 ; }
-        fi
-    fi
+VACUUM;
+PRAGMA INTEGRITY_CHECK;
+.output "${URIMARK_DATA_DIR}/next.id"
 
-    exec 3<&-
+SELECT id_next FROM view_calc_id_next;
+
+.quit
+SQLITE
+
+    exit $?
 }
 
-__um_rebuild_index()
+__um_initialize ()
+{
+    echo "Initialize database" 1>&2
+
+    [[ -f ${URIMARK_DATA_DIR}/urimark.sqlite ]] && {
+        sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output stderr
+
+SELECT "urimark: '${URIMARK_DATA_DIR}/urimark.sqlite' has " || id || " records"
+FROM view_calc_id_number;
+
+.quit
+SQLITE
+        rm -i -- "${URIMARK_DATA_DIR}/urimark.sqlite"
+        (($? == 0)) || exit $?
+    }
+
+    sqlite3 "${URIMARK_DATA_DIR}/urimark.sqlite" <<-SQLITE
+.bail on
+.log "${URIMARK_DATA_DIR}/urimark.log"
+.output stdout
+.read "${URIMARK_CONF_FILE%/*}/um_ini.sql"
+PRAGMA INTEGRITY_CHECK;
+.output "${URIMARK_DATA_DIR}/next.id"
+
+SELECT id_next FROM view_calc_id_next;
+
+.quit
+SQLITE
+
+    exit $?
+}
+
+__um_main ()
 {
     declare \
-        dir= \
-        i=
+        predir_confile=${XDG_CONFIG_HOME:-${HOME}/.config} \
+        predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
+    declare -r \
+        URIMARK_CONF_FILE=${URIMARK_CONF_FILE:-${predir_confile}/urimark/urimark.conf} \
+        URIMARK_DATA_DIR=${URIMARK_DATA_DIR:-${predir_datadir}/urimark/data}_ \
+        URIMARK_TMP_DIR=${URIMARK_TMP_DIR:-"${TMPDIR:-/tmp}/urimark"}
 
-    echo "Index is beeing rebuild..." 1>&2
+    mkdir -p -- "${URIMARK_CONF_FILE%/*}" "$URIMARK_DATA_DIR"
 
-    while read -r dir
+    declare \
+        arg= \
+        args= \
+        delim=\'
+
+    declare -i \
+        con= \
+        pp=1
+
+    declare -gA _um_options
+
+    for arg in "${@#--}"
     do
-        (
-        declare -a \
-           r_au=() \
-           r_db=() \
-           r_desc=() \
-           r_dm=() \
-           r_hier=() \
-           r_id=() \
-           r_name=() \
-           r_part=() \
-           r_ref=() \
-           r_scheme=() \
-           r_tag=() \
-           r_uuid=() \
-           uri_scheme_specific_part_reference=() \
-           uri_scheme_specific_part_tag=()
-        declare \
-            date_build= \
-            date_modification= \
-            uri_authority= \
-            uri_scheme= \
-            uri_scheme_specific_part= \
-            uri_scheme_specific_part_description= \
-            uri_scheme_specific_part_hierarchy= \
-            uri_scheme_specific_part_id= \
-            uri_scheme_specific_part_name= \
-            uuid=
-        > "${dir}/_index"
-        while read -r
-        do
-            source "$REPLY" 2>/dev/null &&
-            {
-                r_uuid+=($uuid)
-                r_db+=($date_build)
-                r_dm+=($date_modification)
-                r_au+=("$uri_authority")
-                r_id+=($uri_scheme_specific_part_id)
-                r_scheme+=("$uri_scheme")
-                r_part+=("$uri_scheme_specific_part")
-                r_desc+=("$uri_scheme_specific_part_description")
-                r_name+=("$uri_scheme_specific_part_name")
-                r_hier+=("$uri_scheme_specific_part_hierarchy")
-                r_ref+=("$(printf '%s;' "${uri_scheme_specific_part_reference[@]}")")
-                r_tag+=("$(printf '%s;' "${uri_scheme_specific_part_tag[@]}")")
-            }
-            uri_scheme_specific_part_reference=()
-            uri_scheme_specific_part_tag=()
-        done < <(GLOBIGNORE=${dir}/*[^0-9]* ; printf '%s\n' "${dir}"/*)
-        if [[ ${r_uuid[@]} ]]
-        then
-            for i in "${!r_uuid[@]}"
+        ((con == 1)) && { con= ; continue ; }
+        case $arg in
+            -[acdehimvnq!AOW])  args="${args}${arg} "                                       ;;
+            -*[1-9DNPSUY])      args="${args}${arg} ${delim}${2}${delim} " ; pp=2 ; con=1   ;;
+            add)                args="${args}-a "                                           ;;
+            and)                args="${args}-A "                                           ;;
+            auth=?*)                                                                        ;&
+            authority=?*)       args="${args}-Y ${delim}${arg#*=}${delim} "                 ;;
+            ct=?*)                                                                          ;&
+            ctime=?*)           args="${args}-2 ${delim}${arg#*=}${delim} "                 ;;
+            com)                                                                            ;&
+            compact)            args="${args}-c "                                           ;;
+            del)                                                                            ;&
+            delete)             args="${args}-d "                                           ;;
+            desc=?*)                                                                        ;&
+            description=?*)     args="${args}-D ${delim}${arg#*=}${delim} "                 ;;
+            edit)               args="${args}-e "                                           ;;
+            help)               args="${args}-h "                                           ;;
+            id=?*)              args="${args}-1 ${delim}${arg#*=}${delim} "                 ;;
+            init)                                                                           ;&
+            initialize)         args="${args}-i "                                           ;;
+            mt=?*)                                                                          ;&
+            mtime=?*)           args="${args}-3 ${delim}${arg#*=}${delim} "                 ;;
+            modi)                                                                           ;&
+            modify)             args="${args}-m "                                           ;;
+            name=?*)            args="${args}-N ${delim}${arg#*=}${delim} "                 ;;
+            nv)                                                                             ;&
+            non-interactive)    args="${args}-n "                                           ;;
+            not)                args="${args}-! "                                           ;;
+            or)                 args="${args}-O "                                           ;;
+            part=?*)            args="${args}-P ${delim}${arg#*=}${delim} "                 ;;
+            query)              args="${args}-q "                                           ;;
+            ref=?*)                                                                         ;&
+            reference=?*)       args="${args}-7 ${delim}${arg#*=}${delim} "                 ;;
+            ref+=?*)                                                                        ;&
+            reference+=?*)      args="${args}-8 ${delim}${arg#*+=}${delim} "                ;;
+            ref-=?*)                                                                        ;&
+            reference-=?*)      args="${args}-9 ${delim}${arg#*-=}${delim} "                ;;
+            scheme=?*)          args="${args}-S ${delim}${arg#*=}${delim} "                 ;;
+            tag=?*)             args="${args}-4 ${delim}${arg#*=}${delim} "                 ;;
+            tag+=?*)            args="${args}-5 ${delim}${arg#*+=}${delim} "                ;;
+            tag-=?*)            args="${args}-6 ${delim}${arg#*-=}${delim} "                ;;
+            uri=?*)             args="${args}-U ${delim}${arg#*=}${delim} "                 ;;
+            version)            args="${args}-v "                                           ;;
+            where)              args="${args}-W "                                           ;;
+            auth=|\
+            authority=|\
+            authority|\
+            auth|\
+            ct=|\
+            ctime=|\
+            ctime|\
+            ct|\
+            desc=|\
+            description=|\
+            description|\
+            desc|\
+            id=|\
+            id|\
+            mt=|\
+            mtime=|\
+            mtime|\
+            mt|\
+            name=|\
+            name|\
+            part=|\
+            part|\
+            ref+=|\
+            ref+|\
+            ref-=|\
+            ref-|\
+            ref=|\
+            reference+=|\
+            reference+|\
+            reference-=|\
+            reference-|\
+            reference=|\
+            reference|\
+            ref|\
+            scheme=|\
+            scheme|\
+            tag+=|\
+            tag+|\
+            tag-=|\
+            tag-|\
+            tag=|\
+            tag|\
+            uri=|\
+            uri)
+                                { printf '%s\n' "Option '$1' requires an argument" 1>&2 ; exit 1 ; } ;;
+            -)                  { printf '%s\n' "Option required: '$1'" 1>&2 ; exit 1 ; }            ;;
+            *)                  #args="${args}${delim}${arg}${delim} "
+                                _um_options[hook_chosen]=$arg
+        esac
+        shift "$pp" && pp=1
+    done
+
+    declare opt=
+    declare -ga _um_sets=()
+    #declare -gA _um_options
+
+    function __um_parse_opt
+    if [[ $OPTARG == -?* ]]
+    then
+        { printf '%s\n' "Option '-${opt}' requires an argument" 1>&2 ; exit 1 ; }
+    else
+        _um_sets+=("$1")
+    fi
+
+    eval set -- "$args"
+    while getopts :1:2:3:4:5:6:7:8:9:AacD:dehimN:nqOP:!S:U:vWY: opt
+    do
+        case $opt in
+            !)  _um_sets+=(not)                                  ;;
+            1)  __um_parse_opt "id=$OPTARG"                      ;;
+            2)  __um_parse_opt "ct=$OPTARG"                      ;;
+            3)  __um_parse_opt "mt=$OPTARG"                      ;;
+            4)  __um_parse_opt "tag=$OPTARG"                     ;;
+            5)  __um_parse_opt "tag+=$OPTARG"                    ;;
+            6)  __um_parse_opt "tag-=$OPTARG"                    ;;
+            7)  __um_parse_opt "reference=$OPTARG"               ;;
+            8)  __um_parse_opt "reference+=$OPTARG"              ;;
+            9)  __um_parse_opt "reference-=$OPTARG"              ;;
+            A)  _um_sets+=(and)                                  ;;
+            D)  __um_parse_opt "description=$OPTARG"             ;;
+            N)  __um_parse_opt "name=$OPTARG"                    ;;
+            O)  _um_sets+=(or)                                   ;;
+            P)  __um_parse_opt "part=$OPTARG"                    ;;
+            S)  __um_parse_opt "scheme=$OPTARG"                  ;;
+            U)  __um_parse_opt "uri=$OPTARG"                     ;;
+            W)  _um_sets+=(where)                                ;;
+            Y)  __um_parse_opt "authority=$OPTARG"               ;;
+            a)  _um_options[action]=add                          ;;
+            c)  _um_options[action]=compact                      ;;
+            d)  _um_options[action]=delete                       ;;
+            e)  _um_options[action]=edit                         ;;
+            h)  __um_help ; exit 0                               ;;
+            i)  _um_options[action]=initialize                   ;;
+            m)  _um_options[action]=modify                       ;;
+            n)  _um_options[non_interactive]=non_interactive     ;;
+            q)  _um_options[action]=query                        ;;
+            v)  __um_version ; exit 0                            ;;
+            :)  printf '%s\n' "Option '-${OPTARG}' requires an argument." 1>&2
+                exit 1                                           ;;
+            \?) printf '%s\n' "Unknown flag: '-${OPTARG}'." 1>&2
+                exit 1
+        esac
+    done
+
+    unset -v \
+        arg \
+        args \
+        con \
+        delim \
+        opt \
+        pp \
+        predir_confile \
+        predir_datadir
+
+    declare -gA hook
+
+    hook[um_default1 description]="Builtin default report: id, uri"
+    hook[um_default1 postprocess]="| cut -d '|' -f1,4,5,6 | tr -d '\"' | tr '|' ' '"
+    hook[um_default2 description]="Builtin default report: csv_quoted"
+    hook[um_default2 postprocess]=""
+
+    [[ -f $URIMARK_CONF_FILE ]] && source "$URIMARK_CONF_FILE"
+
+    _um_options[editor]=${_um_options[editor]:-$EDITOR}
+    [[ ${hook[${_um_options[hook_default]} description]} ]] || _um_options[hook_default]=um_default1
+    #~ _um_options[tag_default]=${_um_options[tag_default]:-NULL}
+    #~ _um_options[reference_default]=${_um_options[reference_default]:-NULL}
+    #~ _um_options[description_default]=${_um_options[description_default]:-NULL}
+    #~ _um_options[hierarchy_default]=${_um_options[hierarchy_default]:-NULL}
+    #~ _um_options[name_default]=${_um_options[name_default]:-NULL}
+
+    #~ while (($# > 0))
+    #~ do
+        #~ case $1 in
+            #~ -[AacdehiMmnO!vW])
+                #~ shift 1
+                #~ ;;
+            #~ -*[1-9UDNSPY])
+                #~ shift 2
+                #~ ;;
+            #~ *)
+                #~ if [[ ${hook[${1} description]} ]]
+                #~ then
+                    #~ _um_options[hook_chosen]=$1
+                    #~ shift 1
+                #~ else
+                    #~ { printf '%s\n' "Unknown parameter: '${1}'." 1>&2 ; exit 1 ; }
+                #~ fi
+        #~ esac
+    #~ done
+
+    if [[ ${hook[${_um_options[hook_chosen]:-${_um_options[hook_default]}} description]} ]]
+    then
+        _um_options[hook_chosen]=${_um_options[hook_chosen]:-${_um_options[hook_default]}}
+        [[ ${hook[${_um_options[hook_chosen]} filter]} && ${#_um_sets[@]} -eq 0 ]] && \
+            _um_sets=(${hook[${_um_options[hook_chosen]} filter]})
+    else
+        { printf '%s\n' "Unknown parameter: '${_um_options[hook_chosen]}'" 1>&2 ; exit 1 ; }
+    fi
+
+    case ${_um_options[action]} in
+        add)
+            __um_add "${_um_sets[@]}"
+            ;;
+        delete)
+            __um_delete "${_um_sets[@]}"
+            ;;
+        edit)
+            __um_edit "${_um_sets[@]}"
+            ;;
+        modify)
+            declare -ga _um_assignments=()
+            declare \
+                i= \
+                where=
+            for i in "${!_um_sets[@]}"
             do
-                printf "%s\n" "\"${r_uuid[i]}\"|\"${r_id[i]}\"|\"${r_db[i]}\"|\"${r_dm[i]}\"|\"${r_scheme[i]}\"|\"${r_au[i]}\"|\"${r_part[i]}\"|\"${r_name[i]}\"|\"${r_desc[i]}\"|\"${r_hier[i]}\"|\"${r_tag[i]%;}\"|\"${r_ref[i]%;}\"" && echo "Rebuilding ${dir}/${r_id[i]}" 1>&2
-            done > "${dir}/_index"
-        else
-            rm -r -- "$dir" && echo "Deleting ${dir}" 1>&2
-            sed -i "\#${dir}#d" "${URIMARK_DATA_DIR}/_uuids"
-        fi
-        ) &
-    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort -u)
-    wait
-}
-
-__um_rebuild_ids()
-{
-    declare \
-        authority= \
-        bd= \
-        description= \
-        dir= \
-        hierarchy= \
-        i= \
-        id= \
-        j= \
-        k= \
-        l= \
-        md= \
-        name= \
-        part= \
-        reference= \
-        scheme= \
-        tag= \
-        uuid=
-
-    declare -a tags=()
-
-    echo "IDs are beeing rebuild..." 1>&2
-
-    while read -r dir
-    do
-        while IFS='|' read -r uuid id bd md scheme authority part name description hierarchy tag reference
-        do
-            {
-                printf '%s\n' "uuid=${uuid//\"/}
-date_build=${bd//\"/}
-date_modification=${md//\"/}
-uri_authority=$authority
-uri_scheme=$scheme
-uri_scheme_specific_part=$part
-uri_scheme_specific_part_description=$description
-uri_scheme_specific_part_hierarchy=$hierarchy
-uri_scheme_specific_part_name=$name
-uri_scheme_specific_part_id=${id//\"/}"
-                reference=${reference//\"/}
-                for i in ${reference//;/ }
-                do
-                    printf '%s\n' "uri_scheme_specific_part_reference[${j:-0}]=$i"
-                    ((j++))
-                done
-                tag=${tag//\"/}
-                while IFS= read -r -d ';'
-                do
-                    tags+=("$REPLY")
-                done <<< "$tag"
-                tags+=("${tag##*;}")
-                for k in "${tags[@]}"
-                do
-                    printf '%s\n' "uri_scheme_specific_part_tag[${l:-0}]=\"$k\""
-                    ((l++))
-                done
-            } > "${dir}/${id//\"/}"
-            tags=()
-            j=0
-            l=0
-        done < "${dir}/_index"
-    done < <(printf '%s\n' "${dir_stack[@]}" | grep -e "${URIMARK_DATA_DIR}/.*" | sort -u)
-}
-
-__um_cat_indexes()
-{
-    sed 's#$#/_index#' "${URIMARK_DATA_DIR}/_uuids" | xargs -r cat > "${URIMARK_DATA_DIR}/_index"
-}
-
-__um_random()
-{
-    declare random=$(od -vAn -N "$1" -tu </dev/urandom)
-
-    printf '%s\n' "${random// /}"
-}
-
-__um_calculating_id()
-{
-    __um_calculating_id_print()
-    {
-        cut -d '|' -f2 "${URIMARK_DATA_DIR}/_index" | \
-            tr -d '\"' | \
-            sort -n
-    }
-
-    if [[ $1 == first ]]
-    then
-        __um_calculating_id_print | head -n1
-    elif [[ $1 == last ]]
-    then
-        __um_calculating_id_print | tail -n1
-    elif [[ $1 == next ]]
-    then
-        if [[ ! -e ${URIMARK_DATA_DIR}/_index ]]
-        then
-            echo 1
-        else
-            comm --nocheck-order -23 \
-                <(eval "printf '%s\n' {1..$(($(__um_calculating_id_print | tail -n1) + 1))}") \
-                <(__um_calculating_id_print) | \
-                head -n1
-        fi
-    fi
-}
-
-__um_calculating_date()
-{
-    __um_calculating_date_print()
-    {
-        cut -d '|' -f $1 "${URIMARK_DATA_DIR}/_index" | \
-            tr -d '"' | \
-            sort -n
-    }
-
-    if [[ $2 == first ]]
-    then
-        __um_calculating_date_print "$1" | head -n1
-    elif [[ $2 == last ]]
-    then
-        __um_calculating_date_print "$1" | tail -n1
-    fi
-}
-
-__um_check_args()
-{
-    declare o=
-    if [[ ! $OPTARG =~ ^-.+ ]]
-    then
-        for o
-        do
-            patterns+=("$o")
-        done
-    else
-        { printf '%s\n' "Option '-${opt}' requires an argument." 1>&2 ; exit 1 ; }
-    fi
+                if [[ $where == where ]]
+                then
+                    continue
+                else
+                    if [[ ${_um_sets[$i]} == where ]]
+                    then
+                        where=where
+                    else
+                        _um_assignments+=("${_um_sets[$i]}")
+                    fi
+                    unset -v "_um_sets[$i]"
+                fi
+            done
+            unset -v i where
+            __um_modify "${_um_sets[@]}"
+            ;;
+        initialize)
+            __um_initialize
+            ;;
+        compact)
+            __um_compact
+            ;;
+        query)
+            ;&
+        *)
+            _um_options[action]=query
+            __um_query "${_um_sets[@]}"
+            exit $?
+    esac
 }
 
 # -- MAIN.
 
-declare -r \
-    predir_confile=${XDG_CONFIG_HOME:-${HOME}/.config} \
-    predir_datadir=${XDG_DATA_HOME:-${HOME}/.local/share}
-declare -r \
-    URIMARK_CONF_FILE=${URIMARK_CONF_FILE:-${predir_confile}/urimark/urimark.conf} \
-    URIMARK_DATA_DIR=${URIMARK_DATA_DIR:-${predir_datadir}/urimark/data}
-declare -r CDPATH=$URIMARK_DATA_DIR
-declare URIMARK_TMP_DIR=${URIMARK_TMP_DIR:-"${TMPDIR:-/tmp}/urimark"}
-
-trap "{ rm -fr -- "$URIMARK_TMP_DIR" "${URIMARK_TMP_DIR}_" ; exit 0 ; }" EXIT
-
-[[ ! -e ${URIMARK_CONF_FILE%/*} ]] && mkdir -p -- "${URIMARK_CONF_FILE%/*}"
-[[ ! -e $URIMARK_DATA_DIR ]] && mkdir -p -- "$URIMARK_DATA_DIR"
-mkdir -p -- "$URIMARK_TMP_DIR" "${URIMARK_TMP_DIR}_"
-
-declare \
-    arg= \
-    args= \
-    delim=\'
-
-for arg
-do
-    arg=${arg#--}
-    case $arg in
-        add)                args="${args}-a "                            ;;
-        and)                args="${args}-A "                            ;;
-        auth=?*)                                                         ;&
-        authority=?*)       args="${args}-Y ${delim}${arg#*=}${delim} "  ;;
-        bd=?*)              args="${args}-2 ${delim}${arg#*=}${delim} "  ;;
-        del)                                                             ;&
-        delete)             args="${args}-d "                            ;;
-        desc=?*)                                                         ;&
-        description=?*)     args="${args}-D ${delim}${arg#*=}${delim} "  ;;
-        edit)               args="${args}-e "                            ;;
-        help)               args="${args}-h "                            ;;
-        hier=?*)                                                         ;&
-        hierarchy=?*)       args="${args}-H ${delim}${arg#*=}${delim} "  ;;
-        id=?*)              args="${args}-1 ${delim}${arg#*=}${delim} "  ;;
-        index)              args="${args}-x "                            ;;
-        md=?*)              args="${args}-3 ${delim}${arg#*=}${delim} "  ;;
-        mod)                args="${args}-M "                            ;;
-        modi)                                                            ;&
-        modify)             args="${args}-m "                            ;;
-        name=?*)            args="${args}-N ${delim}${arg#*=}${delim} "  ;;
-        nv)                                                              ;&
-        non-interactive)    args="${args}-n "                            ;;
-        not)                args="${args}-! "                            ;;
-        or)                 args="${args}-O "                            ;;
-        part=?*)            args="${args}-P ${delim}${arg#*=}${delim} "  ;;
-        reb)                                                             ;&
-        rebuild)            args="${args}-r "                            ;;
-        ref=?*)                                                          ;&
-        reference=?*)       args="${args}-7 ${delim}${arg#*=}${delim} "  ;;
-        ref+=?*)                                                         ;&
-        reference+=?*)      args="${args}-8 ${delim}${arg#*+=}${delim} " ;;
-        ref-=?*)                                                         ;&
-        reference-=?*)      args="${args}-9 ${delim}${arg#*-=}${delim} " ;;
-        scheme=?*)          args="${args}-S ${delim}${arg#*=}${delim} "  ;;
-        tag=?*)             args="${args}-4 ${delim}${arg#*=}${delim} "  ;;
-        tag+=?*)            args="${args}-5 ${delim}${arg#*+=}${delim} " ;;
-        tag-=?*)            args="${args}-6 ${delim}${arg#*-=}${delim} " ;;
-        uri=?*)             args="${args}-U ${delim}${arg#*=}${delim} "  ;;
-        uuid=?*)            args="${args}-0 ${delim}${arg#*=}${delim} "  ;;
-        version)            args="${args}-v "                            ;;
-        auth=|\
-        authority=|\
-        bd=|\
-        desc=|\
-        description=|\
-        hier=|\
-        hierarchy=|\
-        id=|\
-        md=|\
-        name=|\
-        part=|\
-        ref=|\
-        reference=|\
-        ref-=|\
-        reference-=|\
-        ref+=|\
-        reference+=|\
-        scheme=|\
-        tag=|\
-        tag-=|\
-        tag+=|\
-        uri=|\
-        uuid=)
-                            printf '%s\n' "Flag '${arg}' requires an argument." 1>&2
-                            exit 1                                       ;;
-        *)                  if [[ ${arg:0:1} == - ]]
-                            then
-                                args="${args}${arg} "
-                            else
-                                args="${args}${delim}${arg}${delim} "
-                            fi
-    esac
-done
-
-declare \
-    action= \
-    i= \
-    mod= \
-    non_interactive= \
-    opt= \
-    OPTIND=1 \
-    rebuild_index=
-
-declare -a \
-    mods=() \
-    patterns=()
-
-eval set -- "$args"
-while getopts :0:1:2:3:4:5:6:7:8:9:AaD:deH:hMmN:nOP:!rS:U:vxY: opt
-do
-    case $opt in
-        0)  __um_check_args "uuid=$OPTARG"          ;;
-        1)  __um_check_args "id=$OPTARG"            ;;
-        2)  __um_check_args "bd=$OPTARG"            ;;
-        3)  __um_check_args "md=$OPTARG"            ;;
-        4)  __um_check_args "tag=$OPTARG"           ;;
-        5)  __um_check_args "tag+=$OPTARG"          ;;
-        6)  __um_check_args "tag-=$OPTARG"          ;;
-        7)  __um_check_args "reference=$OPTARG"     ;;
-        8)  __um_check_args "reference+=$OPTARG"    ;;
-        9)  __um_check_args "reference-=$OPTARG"    ;;
-        a)  action=add                              ;;
-        A)  patterns+=(and)                         ;;
-        d)  action=delete                           ;;
-        D)  __um_check_args "description=$OPTARG"   ;;
-        e)  action=edit                             ;;
-        h)  action=help                             ;;
-        H)  __um_check_args "hierarchy=$OPTARG"     ;;
-        m)  action=modify                           ;;
-        M)  patterns+=(mod)                         ;;
-        n)  non_interactive=non_interactive         ;;
-        N)  __um_check_args "name=$OPTARG"          ;;
-        O)  patterns+=(or)                          ;;
-        !)  patterns+=(not)                         ;;
-        P)  __um_check_args "part=$OPTARG"          ;;
-        r)  action=rebuild                          ;;
-        S)  __um_check_args "scheme=$OPTARG"        ;;
-        U)  __um_check_args "uri=$OPTARG"           ;;
-        v)  action=version                          ;;
-        x)  rebuild_index=rebuild_index             ;;
-        Y)  __um_check_args "authority=$OPTARG"     ;;
-        :)  printf '%s\n' "Option '-${OPTARG}' requires an argument." 1>&2
-            exit 1                                  ;;
-        \?) printf '%s\n' "Unknown flag: '-${OPTARG}'." 1>&2
-            exit 1
-    esac
-done
-
-declare \
-    description_default= \
-    editor= \
-    hierarchy_default= \
-    hook_default= \
-    name_default= \
-    reference_default= \
-    tag_defaul=
-
-declare -A hook
-
-[[ -f $URIMARK_CONF_FILE ]] && source "$URIMARK_CONF_FILE"
-
-editor=${editor:-$EDITOR}
-[[ ! ${hook[${hook_default} description]} ]] && hook_default=um_default
-tag_default=${tag_default:-null}
-reference_default=${reference_default:-null}
-description_default=${description_default:-null}
-hierarchy_default=${hierarchy_default:-null}
-name_default=${name_default:-null}
-
-hook[um_default description]="Builtin default report"
-hook[um_default postprocess]="| cut -d '|' -f1,2 | tr -d '\"' | tr '|' ' '"
-
-declare hook_chosen=
-
-while (($# > 0))
-do
-    case $1 in
-        -A|-a|-d|-e|-h|-M|-m|-n|-O|-!|-r|-v|-x)
-            shift 1
-            ;;
-        -[0-9]|-U|-D|-H|-N|-S|-P|-Y)
-            shift 2
-            ;;
-        *)
-            if [[ ${hook[${1} description]} ]]
-            then
-                hook_chosen=$1
-                shift 1
-            else
-                { printf '%s\n' "Unknown parameter: '${1}'." 1>&2 ; exit 1 ; }
-            fi
-    esac
-done
-
-hook_chosen=${hook_chosen:-$hook_default}
-[[ ${hook[${hook_chosen} filter]} && ${#patterns[@]} -eq 0 ]] && \
-    patterns=(${hook[${hook_chosen} filter]})
-
-case $action in
-    add)
-            __um_add "${patterns[@]}" &&
-            {
-                __um_rebuild_index &&
-                __um_cat_indexes &&
-                echo "Done." 1>&2
-            }
-            ;;
-    delete)
-            __um_delete "${patterns[@]}" &&
-            {
-                __um_rebuild_index &&
-                __um_cat_indexes &&
-                echo "Done." 1>&2
-            }
-            ;;
-    edit)
-            __um_edit "${patterns[@]}" &&
-            echo "Done." 1>&2
-            ;;
-    help)
-            __um_help
-            ;;
-    modify)
-            for i in "${!patterns[@]}"
-            do
-                [[ ${patterns[$i]} == mod ]] && \
-                    mod=mod && \
-                    unset -v "patterns[$i]" && \
-                    continue
-                [[ $mod == mod ]] && \
-                    mods+=("${patterns[$i]}") && \
-                    unset -v "patterns[$i]"
-            done
-            __um_modify &&
-            {
-                __um_rebuild_index &&
-                __um_cat_indexes &&
-                echo "Done." 1>&2
-            }
-            ;;
-    rebuild)
-
-            __um_rebuild "${patterns[@]}" &&
-            {
-                if [[ $rebuild_index == rebuild_index ]]
-                then
-                    __um_rebuild_index &&
-                    __um_cat_indexes &&
-                    echo "Done." 1>&2
-                else
-                    __um_rebuild_ids &&
-                    echo "Done." 1>&2
-                fi
-            }
-            ;;
-    version)
-            __um_version
-            ;;
-    *)
-            if [[ ! $action ]]
-            then
-                action=query
-                __um_query "${patterns[@]}" && __um_query_post
-            else
-                { echo "No subcommand has been specified." 1>&2 ; exit 1 ; }
-            fi
-esac
+__um_main "$@"
